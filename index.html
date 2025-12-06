@@ -4,577 +4,7 @@
     <meta charset="UTF-8" />
     <title>Học Từ Vựng Tiếng Anh - Pastel Mix</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-        /* ========== RESET ========== */
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --bg: #f5f7fb;
-            --primary: #8b9dfc;        /* tím pastel */
-            --primary-soft: #e4e9ff;
-            --accent-pink: #f9a8d4;    /* hồng pastel */
-            --accent-mint: #a5f3fc;    /* xanh mint */
-            --accent-yellow: #fef3c7;
-            --text-main: #1f2933;
-            --text-sub: #6b7280;
-            --card-bg: #ffffff;
-            --radius-xl: 22px;
-            --radius-lg: 18px;
-            --radius-md: 14px;
-            --shadow-soft: 0 16px 30px rgba(15, 23, 42, 0.10);
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            min-height: 100vh;
-            color: var(--text-main);
-            background:
-                radial-gradient(circle at top left, rgba(129, 140, 248, 0.23), transparent 60%),
-                radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.18), transparent 60%),
-                var(--bg);
-        }
-
-        .app-shell {
-            min-height: 100vh;
-            display: flex;
-            align-items: stretch;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .app {
-            display: flex;
-            width: 100%;
-            max-width: 1180px;
-            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(240, 249, 255, 0.95));
-            border-radius: 26px;
-            border: 1px solid rgba(209, 213, 219, 0.9);
-            overflow: hidden;
-            box-shadow: var(--shadow-soft);
-        }
-
-        /* ========== SIDEBAR ========== */
-        .sidebar {
-            width: 270px;
-            padding: 22px 20px 22px 22px;
-            display: flex;
-            flex-direction: column;
-            gap: 22px;
-            border-right: 1px solid rgba(209, 213, 219, 0.8);
-            /* pastel gradient */
-            background: linear-gradient(
-                160deg,
-                #e0e7ff 0%,
-                #ffe4f3 45%,
-                #dcfce7 100%
-            );
-        }
-
-        .logo-block {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .logo-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 999px;
-            background: radial-gradient(circle at 30% 20%, #fde68a, #f9a8d4 50%, #8b5cf6 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 18px;
-            color: white;
-            box-shadow: 0 10px 25px rgba(148, 163, 184, 0.65);
-        }
-
-        .logo-text-main {
-            font-size: 19px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            color: #111827;
-        }
-
-        .logo-text-sub {
-            font-size: 12px;
-            color: #4b5563;
-        }
-
-        .streak-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-            padding: 4px 11px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(209, 213, 219, 0.95);
-            font-size: 11px;
-            color: #4b5563;
-        }
-
-        .streak-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: #fbbf24;
-            box-shadow: 0 0 8px rgba(250, 204, 21, 0.8);
-        }
-
-        .nav {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 4px;
-        }
-
-        .nav-button {
-            border-radius: 14px;
-            border: 1px solid transparent;
-            background: transparent;
-            color: #374151;
-            font-size: 13px;
-            padding: 8px 10px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.16s ease;
-        }
-
-        .nav-button span.icon {
-            width: 22px;
-            height: 22px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .nav-button.active,
-        .nav-button:hover {
-            background: rgba(255, 255, 255, 0.9);
-            border-color: rgba(148, 163, 184, 0.8);
-            box-shadow: 0 7px 18px rgba(148, 163, 184, 0.55);
-        }
-
-        .goal-card {
-            margin-top: 4px;
-            padding: 14px 13px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #fef9c3, #e0f2fe);
-            font-size: 13px;
-            line-height: 1.5;
-            border: 1px solid rgba(251, 191, 36, 0.35);
-            box-shadow: 0 10px 24px rgba(250, 204, 21, 0.3);
-            color: #78350f;
-        }
-
-        .goal-card h3 {
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .goal-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .goal-chip {
-            font-size: 11px;
-            padding: 3px 9px;
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.5);
-            background: rgba(255, 255, 255, 0.9);
-            color: #4b5563;
-        }
-
-        .footer-note {
-            margin-top: auto;
-            font-size: 11px;
-            line-height: 1.6;
-            color: #4b5563;
-        }
-
-        /* ========== MAIN ========== */
-        .main {
-            flex: 1;
-            padding: 22px 22px 22px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .main-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .main-title {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .main-sub {
-            font-size: 13px;
-            color: var(--text-sub);
-            margin-top: 3px;
-        }
-
-        .main-header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .pill {
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            border: 1px solid rgba(191, 219, 254, 1);
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #1f2937;
-        }
-
-        .pill-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: #22c55e;
-            box-shadow: 0 0 6px rgba(34, 197, 94, 0.9);
-        }
-
-        .btn-ghost {
-            padding: 7px 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(209, 213, 219, 1);
-            background: #ffffff;
-            color: #374151;
-            font-size: 12px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.16s ease;
-        }
-
-        .btn-ghost:hover {
-            background: #e5e7eb;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(148, 163, 184, 0.4);
-        }
-
-        /* CARD CHUNG */
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            padding: 18px 18px 16px;
-            border: 1px solid rgba(229, 231, 235, 1);
-            box-shadow: 0 12px 26px rgba(148, 163, 184, 0.25);
-        }
-
-        .card-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .card-description {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-top: 3px;
-        }
-
-        .badge {
-            padding: 4px 9px;
-            border-radius: 999px;
-            font-size: 11px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: #1d4ed8;
-        }
-
-        /* FORM THÊM TỪ */
-        form#word-form {
-            margin-top: 8px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1.1fr 1.1fr 1.6fr 0.9fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .form-field {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        label {
-            font-size: 11px;
-            color: #4b5563;
-        }
-
-        input, select, textarea {
-            padding: 8px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(209, 213, 219, 1);
-            background: #ffffff;
-            color: #111827;
-            font-size: 13px;
-            outline: none;
-            transition: all 0.16s ease;
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-            color: #9ca3af;
-        }
-
-        textarea {
-            min-height: 40px;
-            max-height: 100px;
-            resize: vertical;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.65);
-            background: #ffffff;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 9px 12px;
-            border-radius: 999px;
-            border: none;
-            cursor: pointer;
-            background: linear-gradient(130deg, #8b9dfc, #f9a8d4, #6ee7b7);
-            color: #111827;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 12px 25px rgba(129, 140, 248, 0.55);
-            transition: all 0.16s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 35px rgba(129, 140, 248, 0.7);
-            opacity: 0.98;
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-            box-shadow: 0 10px 22px rgba(129, 140, 248, 0.65);
-        }
-
-        /* LIST TỪ VỰNG */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 6px;
-        }
-
-        .search-input {
-            width: 220px;
-        }
-
-        .search-input input {
-            width: 100%;
-        }
-
-        .word-list {
-            margin-top: 4px;
-            max-height: 340px;
-            overflow-y: auto;
-            border-radius: var(--radius-lg);
-            border: 1px solid #e5e7eb;
-            background: #f9fafb;
-        }
-
-        .word-row {
-            display: grid;
-            grid-template-columns: 1.1fr 1.1fr 1.6fr 0.7fr 60px;
-            gap: 8px;
-            padding: 8px 11px;
-            font-size: 13px;
-            align-items: center;
-            color: #111827;
-        }
-
-        .word-row:nth-child(odd) {
-            background: #ffffff;
-        }
-
-        .word-row:nth-child(even) {
-            background: #f3f4ff;
-        }
-
-        .word-header {
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            background: #e0e7ff;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #4b5563;
-        }
-
-        .word-empty {
-            padding: 10px 11px;
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-        .tag-level {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .tag-A1 { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-        .tag-A2 { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-        .tag-B1 { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-        .tag-B2 { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-        .tag-C1 { background: #fce7f3; color: #9d174d; border: 1px solid #f9a8d4; }
-        .tag-other { background: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
-
-        .word-delete {
-            border: none;
-            background: transparent;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 12px;
-            padding: 4px 4px;
-            border-radius: 999px;
-            transition: all 0.16s ease;
-        }
-
-        .word-delete:hover {
-            background: rgba(239, 68, 68, 0.08);
-        }
-
-        /* QUIZ BOX */
-        .quiz-box {
-            margin-top: 12px;
-            padding: 10px 11px;
-            border-radius: var(--radius-md);
-            border: 1px dashed #cbd5f5;
-            background: #eff6ff;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            font-size: 13px;
-            color: #1f2937;
-        }
-
-        .quiz-question {
-            font-weight: 600;
-        }
-
-        .quiz-answer {
-            padding: 8px 10px;
-            border-radius: 12px;
-            background: #e0f2fe;
-            font-size: 13px;
-        }
-
-        /* SCROLLBAR NHẸ */
-        .word-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .word-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .word-list::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.9);
-            border-radius: 999px;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 960px) {
-            .app {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                flex-direction: row;
-                align-items: center;
-                gap: 16px;
-                border-right: none;
-                border-bottom: 1px solid rgba(209, 213, 219, 0.9);
-            }
-            .goal-card {
-                flex: 1;
-            }
-            .footer-note {
-                display: none;
-            }
-        }
-
-        @media (max-width: 850px) {
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .app-shell {
-                padding: 12px;
-            }
-            .main {
-                padding: 16px;
-            }
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            .word-row,
-            .word-header {
-                grid-template-columns: 1fr 1fr;
-                grid-auto-rows: auto;
-            }
-            .search-input {
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="app-shell">
@@ -586,62 +16,77 @@
                     <div class="logo-icon">En</div>
                     <div>
                         <div class="logo-text-main">English Vocab Lab</div>
-                        <div class="logo-text-sub">Xây sổ tay từ vựng pastel của riêng bạn</div>
+                        <div class="logo-text-sub">Sổ tay từ vựng pastel của riêng bạn</div>
                     </div>
                 </div>
+
                 <div class="streak-pill">
                     <span class="streak-dot"></span>
                     <span>Chuỗi ngày học: <b>1 ngày</b> (demo)</span>
                 </div>
-            </div>
 
-            <nav class="nav">
-                <button class="nav-button active">
-                    <span class="icon">📘</span>
-                    <span>Từ vựng & Sổ tay</span>
-                </button>
-                <button class="nav-button">
-                    <span class="icon">📚</span>
-                    <span>Ngữ pháp (sau này)</span>
-                </button>
-                <button class="nav-button">
-                    <span class="icon">🎧</span>
-                    <span>Nghe & phát âm (sau này)</span>
-                </button>
-            </nav>
+                <nav class="nav">
+                    <button class="nav-button active">
+                        <span class="icon">📘</span>
+                        <span>Từ vựng & Sổ tay</span>
+                    </button>
+                    <button class="nav-button">
+                        <span class="icon">📚</span>
+                        <span>Ngữ pháp (sau này)</span>
+                    </button>
+                    <button class="nav-button">
+                        <span class="icon">🎧</span>
+                        <span>Nghe & phát âm (sau này)</span>
+                    </button>
+                </nav>
 
-            <div class="goal-card">
-                <h3>Mục tiêu hôm nay</h3>
-                <p>Thêm ít nhất <b>5 từ mới</b> và ôn lại từ đã lưu.  
-                    Học đều mỗi ngày sẽ nhớ cực lâu 🔁
-                </p>
-                <div class="goal-chip-row">
-                    <span class="goal-chip">+3 từ đơn</span>
-                    <span class="goal-chip">+2 cụm từ</span>
-                    <span class="goal-chip">Ôn 10 từ cũ</span>
+                <div class="goal-card">
+                    <h3>Mục tiêu hôm nay</h3>
+                    <p>Thêm ít nhất <b>5 từ mới</b> và ôn lại từ đã lưu.  
+                        Học đều mỗi ngày sẽ nhớ cực lâu 🔁
+                    </p>
+                    <div class="goal-chip-row">
+                        <span class="goal-chip">+3 từ đơn</span>
+                        <span class="goal-chip">+2 cụm từ</span>
+                        <span class="goal-chip">Ôn 10 từ cũ</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="footer-note">
-                Tip: Hãy tạo ví dụ liên quan tới <b>cuộc sống thực</b>  
-                (công việc, game, đồ ăn, người yêu, v.v.) → nhớ cực bền ✨
+            <!-- Tài khoản + logout ở cuối sidebar -->
+            <div class="sidebar-bottom">
+                <div class="account-card">
+                    <div class="account-label">Tài khoản</div>
+                    <div class="user-pill" id="user-display">...</div>
+
+                    <div class="account-actions">
+                        <button class="btn-ghost full-width" id="change-password-button">🔑 Đổi mật khẩu</button>
+                        <button class="btn-ghost full-width" id="logout-button">🚪 Đăng xuất</button>
+                    </div>
+                </div>
+
+                <div class="footer-note">
+                    Tip: Hãy tạo ví dụ liên quan tới <b>cuộc sống thực</b>  
+                    (công việc, game, đồ ăn, người yêu, v.v.) → nhớ cực bền ✨
+                </div>
             </div>
         </aside>
 
         <!-- ===== MAIN ===== -->
         <main class="main">
-            <!-- Header trên cùng -->
             <header class="main-header">
                 <div>
                     <div class="main-title">Sổ tay từ vựng</div>
-                    <div class="main-sub">Thêm – lưu – ôn lại từ vựng tiếng Anh theo cách của bạn.</div>
+                    <div class="main-sub">
+                        Thêm – lưu – ôn lại từ vựng tiếng Anh, dữ liệu lưu trên Google Sheets.
+                    </div>
                 </div>
                 <div class="main-header-right">
                     <div class="pill" id="total-count-pill">
                         <span class="pill-dot"></span>
                         <span>0 từ</span>
                     </div>
-                    <button class="btn-ghost" id="clear-all-button">🗑 Xóa tất cả</button>
+                    <button class="btn-ghost" id="reload-button">🔄 Tải lại từ Sheets</button>
                 </div>
             </header>
 
@@ -651,52 +96,65 @@
                     <div>
                         <div class="card-title">Thêm từ mới</div>
                         <p class="card-description">
-                            Điền từ tiếng Anh, nghĩa tiếng Việt, ví dụ ngắn & chọn độ khó (A1, B1...).
+                            Điền đầy đủ thông tin, Date Added sẽ được tạo tự động trên Google Sheets.
                         </p>
                     </div>
-                    <span class="badge">Lưu bằng Local Storage – dữ liệu nằm trên máy bạn</span>
+                    <span class="badge">Nguồn dữ liệu chính: Google Sheets</span>
                 </div>
 
                 <form id="word-form">
                     <div class="form-grid">
                         <div class="form-field">
-                            <label for="word-en">Từ tiếng Anh *</label>
-                            <input id="word-en" type="text" placeholder="vd: apple" required />
+                            <label for="word">Word *</label>
+                            <input id="word" type="text" placeholder="vd: apple" required />
                         </div>
                         <div class="form-field">
-                            <label for="word-vi">Nghĩa tiếng Việt *</label>
-                            <input id="word-vi" type="text" placeholder="vd: quả táo" required />
+                            <label for="meaning">Meaning *</label>
+                            <input id="meaning" type="text" placeholder="vd: quả táo" required />
                         </div>
                         <div class="form-field">
-                            <label for="word-example">Ví dụ (EN hoặc VI)</label>
-                            <textarea id="word-example" placeholder="vd: I eat an apple every morning."></textarea>
+                            <label for="folder">Folder (nhóm / chủ đề)</label>
+                            <input id="folder" type="text" placeholder="vd: Food, Travel..." />
                         </div>
                         <div class="form-field">
-                            <label for="word-level">Độ khó</label>
-                            <select id="word-level">
-                                <option value="A1">A1</option>
-                                <option value="A2">A2</option>
-                                <option value="B1">B1</option>
-                                <option value="B2">B2</option>
-                                <option value="C1">C1</option>
-                                <option value="other">Khác</option>
+                            <label for="ipa">Pronunciation (IPA)</label>
+                            <input id="ipa" type="text" placeholder="vd: /ˈæp.əl/" />
+                        </div>
+                        <div class="form-field">
+                            <label for="type">Type</label>
+                            <input id="type" type="text" placeholder="vd: noun, verb..." />
+                        </div>
+                        <div class="form-field">
+                            <label for="status">Status</label>
+                            <select id="status">
+                                <option value="new">new</option>
+                                <option value="learning">learning</option>
+                                <option value="review">review</option>
+                                <option value="mastered">mastered</option>
                             </select>
                         </div>
+                        <div class="form-field" style="grid-column: 1 / -1;">
+                            <label for="sentence">Sentence</label>
+                            <textarea id="sentence" placeholder="vd: I eat an apple every morning."></textarea>
+                        </div>
                     </div>
-                    <button class="btn-primary" type="submit">+ Thêm vào danh sách</button>
+                    <button class="btn-primary" type="submit">+ Thêm vào Google Sheets</button>
                 </form>
             </section>
 
-            <!-- Card: Danh sách + quiz -->
+            <!-- Card: danh sách + quiz -->
             <section class="card">
                 <div class="toolbar">
                     <div>
                         <div class="card-title">Danh sách từ vựng</div>
-                        <p class="card-description">Lọc, xóa từng từ và chơi quiz nhanh để ôn lại.</p>
+                        <p class="card-description">
+                            Dữ liệu được load từ Google Sheets, có thể lọc và quiz nhanh.
+                        </p>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <div class="search-input">
-                            <input id="search-input" type="text" placeholder="🔍 Tìm theo EN / VI..." />
+                            <input id="search-input" type="text"
+                                   placeholder="🔍 Tìm theo Word / Meaning / Folder..." />
                         </div>
                         <button class="btn-ghost" id="quiz-button">❓ Quiz nhanh</button>
                     </div>
@@ -704,14 +162,16 @@
 
                 <div class="word-list" id="word-list">
                     <div class="word-row word-header">
-                        <div>English</div>
-                        <div>Tiếng Việt</div>
-                        <div>Ví dụ</div>
-                        <div>Cấp độ</div>
-                        <div></div>
+                        <div>Word</div>
+                        <div>Meaning</div>
+                        <div>Sentence</div>
+                        <div>Type</div>
+                        <div>Folder</div>
+                        <div>Status</div>
                     </div>
                     <div class="word-empty" id="word-empty">
-                        Chưa có từ nào, hãy thêm vài từ mới ở card trên nhé.
+                        Chưa có từ nào hoặc chưa load được dữ liệu.
+                        Hãy bấm "Tải lại từ Sheets" hoặc thêm từ mới.
                     </div>
                 </div>
 
@@ -724,181 +184,36 @@
     </div>
 </div>
 
-<script>
-    // ====== JS QUẢN LÝ TỪ VỰNG ======
-    const STORAGE_KEY = "english_vocab_list_v1";
+<!-- Modal đổi mật khẩu -->
+<div class="modal-backdrop" id="change-password-modal" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-title">Đổi mật khẩu</div>
+        <p class="modal-sub">Mật khẩu sẽ được cập nhật cho tài khoản đang đăng nhập.</p>
 
-    let words = [];
+        <form id="change-password-form" class="modal-form">
+            <div class="form-field">
+                <label for="old-password">Mật khẩu hiện tại</label>
+                <input type="password" id="old-password" autocomplete="current-password" />
+            </div>
+            <div class="form-field">
+                <label for="new-password">Mật khẩu mới</label>
+                <input type="password" id="new-password" autocomplete="new-password" />
+            </div>
+            <div class="form-field">
+                <label for="confirm-password">Nhập lại mật khẩu mới</label>
+                <input type="password" id="confirm-password" autocomplete="new-password" />
+            </div>
 
-    const wordForm = document.getElementById("word-form");
-    const wordEnInput = document.getElementById("word-en");
-    const wordViInput = document.getElementById("word-vi");
-    const wordExampleInput = document.getElementById("word-example");
-    const wordLevelSelect = document.getElementById("word-level");
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="cancel-change-password">Hủy</button>
+                <button type="submit" class="btn-primary" style="width:auto;">Lưu mật khẩu</button>
+            </div>
 
-    const wordListEl = document.getElementById("word-list");
-    const wordEmptyEl = document.getElementById("word-empty");
-    const totalCountPill = document.getElementById("total-count-pill");
-    const clearAllButton = document.getElementById("clear-all-button");
+            <div id="change-password-message" class="modal-message"></div>
+        </form>
+    </div>
+</div>
 
-    const searchInput = document.getElementById("search-input");
-    const quizButton = document.getElementById("quiz-button");
-    const quizBox = document.getElementById("quiz-box");
-    const quizQuestion = document.getElementById("quiz-question");
-    const quizAnswer = document.getElementById("quiz-answer");
-
-    function loadFromStorage() {
-        try {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (data) {
-                words = JSON.parse(data);
-            }
-        } catch (e) {
-            console.error("Lỗi đọc localStorage", e);
-            words = [];
-        }
-    }
-
-    function saveToStorage() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
-    }
-
-    function getLevelTagClass(level) {
-        switch (level) {
-            case "A1": return "tag-A1";
-            case "A2": return "tag-A2";
-            case "B1": return "tag-B1";
-            case "B2": return "tag-B2";
-            case "C1": return "tag-C1";
-            default: return "tag-other";
-        }
-    }
-
-    function renderWords(filterText = "") {
-        // Xóa các dòng cũ (trừ header)
-        const rows = Array.from(wordListEl.querySelectorAll(".word-row"));
-        rows.forEach((row, index) => {
-            if (index === 0) return; // giữ header
-            row.remove();
-        });
-
-        let visibleCount = 0;
-        const text = filterText.trim().toLowerCase();
-
-        words.forEach((w, index) => {
-            if (text) {
-                const match = (w.en + " " + w.vi).toLowerCase().includes(text);
-                if (!match) return;
-            }
-
-            visibleCount++;
-
-            const row = document.createElement("div");
-            row.className = "word-row";
-
-            const en = document.createElement("div");
-            en.textContent = w.en;
-
-            const vi = document.createElement("div");
-            vi.textContent = w.vi;
-
-            const example = document.createElement("div");
-            example.textContent = w.example || "—";
-
-            const level = document.createElement("div");
-            const levelSpan = document.createElement("span");
-            levelSpan.className = "tag-level " + getLevelTagClass(w.level);
-            levelSpan.textContent = w.level || "other";
-            level.appendChild(levelSpan);
-
-            const del = document.createElement("button");
-            del.className = "word-delete";
-            del.textContent = "Xóa";
-            del.addEventListener("click", () => {
-                if (confirm("Xóa từ '" + w.en + "'?")) {
-                    words.splice(index, 1);
-                    saveToStorage();
-                    renderWords(searchInput.value);
-                    updateCount();
-                }
-            });
-
-            row.appendChild(en);
-            row.appendChild(vi);
-            row.appendChild(example);
-            row.appendChild(level);
-            row.appendChild(del);
-
-            wordListEl.appendChild(row);
-        });
-
-        wordEmptyEl.style.display = words.length === 0 || visibleCount === 0 ? "block" : "none";
-    }
-
-    function updateCount() {
-        const span = totalCountPill.querySelector("span:last-child");
-        if (span) span.textContent = words.length + " từ";
-    }
-
-    wordForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const en = wordEnInput.value.trim();
-        const vi = wordViInput.value.trim();
-        const example = wordExampleInput.value.trim();
-        const level = wordLevelSelect.value || "other";
-
-        if (!en || !vi) return;
-
-        words.push({
-            en,
-            vi,
-            example,
-            level,
-            createdAt: Date.now()
-        });
-
-        saveToStorage();
-        renderWords(searchInput.value);
-        updateCount();
-
-        wordEnInput.value = "";
-        wordViInput.value = "";
-        wordExampleInput.value = "";
-        wordEnInput.focus();
-    });
-
-    clearAllButton.addEventListener("click", () => {
-        if (words.length === 0) return;
-        if (confirm("Bạn chắc chắn muốn xóa TẤT CẢ từ đã lưu?")) {
-            words = [];
-            saveToStorage();
-            renderWords(searchInput.value);
-            updateCount();
-        }
-    });
-
-    searchInput.addEventListener("input", (e) => {
-        renderWords(e.target.value);
-    });
-
-    quizButton.addEventListener("click", () => {
-        if (words.length === 0) {
-            alert("Chưa có từ nào để quiz, hãy thêm vài từ trước nhé!");
-            return;
-        }
-        const random = words[Math.floor(Math.random() * words.length)];
-        quizBox.style.display = "flex";
-        quizQuestion.textContent = "Từ nào trong tiếng Anh có nghĩa: \"" + random.vi + "\" ?";
-        quizAnswer.textContent =
-            "Đáp án: " + random.en +
-            (random.example ? " | Ví dụ: " + random.example : "");
-        quizBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-
-    // Khởi tạo
-    loadFromStorage();
-    renderWords();
-    updateCount();
-</script>
+<script src="main.js"></script>
 </body>
 </html>

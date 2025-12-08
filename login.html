@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Đăng nhập - English Vocab Lab</title>
+    <title>Đăng nhập - Vocab Lab</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -13,20 +13,23 @@
             <div class="logo-icon">En</div>
             <div>
                 <div class="logo-text-main">English Vocab Lab</div>
-                <div class="logo-text-sub">Đăng nhập để vào sổ tay từ vựng</div>
+                <div class="logo-text-sub">Đăng nhập để tiếp tục</div>
             </div>
         </div>
 
-        <div class="login-form">
+        <form id="login-form" class="login-form">
             <label for="login-email">Email</label>
-            <input id="login-email" type="email" placeholder="example@gmail.com" />
+            <input type="email" id="login-email" placeholder="your@gmail.com" required />
 
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="••••••" />
+            <label for="login-password">Mật khẩu</label>
+            <input type="password" id="login-password" required />
 
-            <button id="login-submit" class="btn-primary">🔐 Đăng nhập</button>
+            <button type="submit" class="btn-primary" style="width:100%;margin-top:8px;">
+                Đăng nhập
+            </button>
+
             <div id="login-message" class="login-message"></div>
-        </div>
+        </form>
     </div>
 </div>
 

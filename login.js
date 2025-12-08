@@ -1,95 +1,66 @@
-const LOGIN_API_URL = "https://script.google.com/macros/s/AKfycbyR5Q95O9snPcgjLJweQKY9s_qV9HwK1Q6MsJJHfBxzf1Tu-5ScwdcUoze80zZ2h2bf/exec";   // URL Web App LoginScript.gs (/exec)
-const USER_STORAGE_KEY = "vocab_user_profile";
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzTEPhty8799D5Q6LbOTcn10FoUreY2C_kfvOJPCaN2R5pq38DeCOPEsM7mKncsiVFI/exec";
+const USER_STORAGE_KEY       = "vocab_user_profile";
+const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 
-// Nếu đã login rồi thì vào luôn index.html
-(function autoRedirectIfLoggedIn() {
-    try {
-        const raw = localStorage.getItem(USER_STORAGE_KEY);
-        if (raw) {
-            const user = JSON.parse(raw);
-            if (user && user.email) {
-                window.location.href = "index.html";
-            }
-        }
-    } catch (e) {
-        console.error("Lỗi đọc user từ localStorage:", e);
-    }
-})();
+const loginForm     = document.getElementById("login-form");
+const emailInput    = document.getElementById("login-email");
+const passwordInput = document.getElementById("login-password");
+const loginMessage  = document.getElementById("login-message");
 
-const loginEmail = document.getElementById("login-email");
-const loginPassword = document.getElementById("login-password");
-const loginSubmit = document.getElementById("login-submit");
-const loginMessage = document.getElementById("login-message");
+if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-async function doLogin() {
-    loginMessage.style.color = "red";
-    loginMessage.textContent = "Đang kiểm tra...";
+        const email    = (emailInput.value || "").trim().toLowerCase();
+        const password = (passwordInput.value || "").trim();
 
-    const email = (loginEmail.value || "").trim().toLowerCase();
-    const password = (loginPassword.value || "").trim();
+        if (!email || !password) return;
 
-    if (!email || !password) {
-        loginMessage.textContent = "Vui lòng nhập đủ email & password";
-        return;
-    }
+        loginMessage.textContent = "Đang đăng nhập...";
+        loginMessage.style.color = "#374151";
 
-    try {
-        const res = await fetch(LOGIN_API_URL, {
-            method: "POST",
-            mode: "cors",
-            // text/plain => "simple request" => KHÔNG gửi OPTIONS preflight
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error("Login API status:", res.status, text);
-            loginMessage.textContent = "Lỗi server: " + res.status;
-            return;
-        }
-
-        let data;
         try {
-            data = await res.json();
-        } catch (e) {
-            const text = await res.text();
-            console.error("Không parse được JSON, response:", text);
-            loginMessage.textContent = "Server trả về dữ liệu không hợp lệ";
-            return;
-        }
+            const res = await fetch(LOGIN_API_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ email, password })
+            });
 
-        if (data.status === "success") {
-            loginMessage.style.color = "green";
-            loginMessage.textContent = "Đăng nhập thành công!";
+            if (!res.ok) {
+                const t = await res.text();
+                console.error("Login HTTP error:", res.status, t);
+                loginMessage.textContent = "Lỗi server: " + res.status;
+                loginMessage.style.color = "#b91c1c";
+                return;
+            }
 
-            const profile = {
-                email: data.user && data.user.email ? data.user.email : email,
-                name: data.user && data.user.name ? data.user.name : ""
-            };
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(profile));
+            const data = await res.json();
+            if (data.status === "success" && data.user) {
+                // Lưu profile, kèm geminiKey nếu có
+                const userProfile = {
+                    email    : data.user.email,
+                    name     : data.user.name || "",
+                    geminiKey: data.user.geminiKey || ""
+                };
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
 
-            setTimeout(() => {
+                // Nếu sheet đã có key (cột C), sync về localStorage luôn
+                if (userProfile.geminiKey) {
+                    localStorage.setItem(GEMINI_KEY_STORAGE_KEY, userProfile.geminiKey);
+                } else {
+                    localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+                }
+
                 window.location.href = "index.html";
-            }, 600);
-        } else {
-            loginMessage.textContent = data.message || "Sai thông tin đăng nhập";
-        }
-
-    } catch (err) {
-        console.error("Fetch login lỗi:", err);
-        loginMessage.textContent = "Không kết nối được tới server (check lại URL / WebApp)";
-    }
-}
-
-if (loginSubmit) {
-    loginSubmit.addEventListener("click", doLogin);
-}
-
-[loginEmail, loginPassword].forEach(el => {
-    el.addEventListener("keyup", (e) => {
-        if (e.key === "Enter") {
-            doLogin();
+            } else {
+                loginMessage.textContent = data.message || "Đăng nhập thất bại.";
+                loginMessage.style.color = "#b91c1c";
+            }
+        } catch (err) {
+            console.error("Login fetch error:", err);
+            loginMessage.textContent = "Không kết nối được tới server.";
+            loginMessage.style.color = "#b91c1c";
         }
     });
-});
+}

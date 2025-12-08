@@ -2,14 +2,14 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Học Từ Vựng Tiếng Anh - Pastel Mix</title>
+    <title>Học từ vựng tiếng Anh</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="app-shell">
     <div class="app">
-        <!-- ===== SIDEBAR ===== -->
+        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div>
                 <div class="logo-block">
@@ -22,7 +22,7 @@
 
                 <div class="streak-pill">
                     <span class="streak-dot"></span>
-                    <span>Chuỗi ngày học: <b>1 ngày</b> (demo)</span>
+                    <span id="streak-text">Chuỗi ngày học: <b>0 ngày</b></span>
                 </div>
 
                 <nav class="nav">
@@ -42,9 +42,7 @@
 
                 <div class="goal-card">
                     <h3>Mục tiêu hôm nay</h3>
-                    <p>Thêm ít nhất <b>5 từ mới</b> và ôn lại từ đã lưu.  
-                        Học đều mỗi ngày sẽ nhớ cực lâu 🔁
-                    </p>
+                    <p>Thêm ít nhất <b>5 từ mới</b> và ôn lại từ đã lưu. Học đều mỗi ngày sẽ nhớ rất lâu 🔁</p>
                     <div class="goal-chip-row">
                         <span class="goal-chip">+3 từ đơn</span>
                         <span class="goal-chip">+2 cụm từ</span>
@@ -53,12 +51,10 @@
                 </div>
             </div>
 
-            <!-- Tài khoản + logout ở cuối sidebar -->
             <div class="sidebar-bottom">
                 <div class="account-card">
                     <div class="account-label">Tài khoản</div>
-                    <div class="user-pill" id="user-display">...</div>
-
+                    <div class="user-pill" id="user-display">Chưa đăng nhập</div>
                     <div class="account-actions">
                         <button class="btn-ghost full-width" id="change-password-button">🔑 Đổi mật khẩu</button>
                         <button class="btn-ghost full-width" id="logout-button">🚪 Đăng xuất</button>
@@ -66,13 +62,12 @@
                 </div>
 
                 <div class="footer-note">
-                    Tip: Hãy tạo ví dụ liên quan tới <b>cuộc sống thực</b>  
-                    (công việc, game, đồ ăn, người yêu, v.v.) → nhớ cực bền ✨
+                    Tip: Hãy tạo ví dụ liên quan tới <b>cuộc sống thực</b> (công việc, game, đồ ăn...) để nhớ lâu hơn ✨
                 </div>
             </div>
         </aside>
 
-        <!-- ===== MAIN ===== -->
+        <!-- MAIN -->
         <main class="main">
             <header class="main-header">
                 <div>
@@ -90,13 +85,13 @@
                 </div>
             </header>
 
-            <!-- Card: Thêm từ mới -->
+            <!-- Thêm từ mới -->
             <section class="card">
                 <div class="card-header-row">
                     <div>
                         <div class="card-title">Thêm từ mới</div>
                         <p class="card-description">
-                            Điền đầy đủ thông tin, Date Added sẽ được tạo tự động trên Google Sheets.
+                            Điền đầy đủ thông tin hoặc dùng 🤖 AI để gợi ý. Date Added sẽ được tạo trên Google Sheets.
                         </p>
                     </div>
                     <span class="badge">Nguồn dữ liệu chính: Google Sheets</span>
@@ -107,23 +102,32 @@
                         <div class="form-field">
                             <label for="word">Word *</label>
                             <input id="word" type="text" placeholder="vd: apple" required />
+                            <button id="ai-suggest-button" type="button" class="btn-ghost ai-btn">
+                                🤖 AI gợi ý nội dung
+                            </button>
                         </div>
+
                         <div class="form-field">
                             <label for="meaning">Meaning *</label>
                             <input id="meaning" type="text" placeholder="vd: quả táo" required />
                         </div>
+
                         <div class="form-field">
                             <label for="folder">Folder (nhóm / chủ đề)</label>
-                            <input id="folder" type="text" placeholder="vd: Food, Travel..." />
+                            <input type="text" id="folder" placeholder="Folder..." list="folder-list" />
+                            <datalist id="folder-list"></datalist>
                         </div>
+
                         <div class="form-field">
                             <label for="ipa">Pronunciation (IPA)</label>
                             <input id="ipa" type="text" placeholder="vd: /ˈæp.əl/" />
                         </div>
+
                         <div class="form-field">
                             <label for="type">Type</label>
                             <input id="type" type="text" placeholder="vd: noun, verb..." />
                         </div>
+
                         <div class="form-field">
                             <label for="status">Status</label>
                             <select id="status">
@@ -133,51 +137,56 @@
                                 <option value="mastered">mastered</option>
                             </select>
                         </div>
+
                         <div class="form-field" style="grid-column: 1 / -1;">
                             <label for="sentence">Sentence</label>
                             <textarea id="sentence" placeholder="vd: I eat an apple every morning."></textarea>
                         </div>
                     </div>
-                    <button class="btn-primary" type="submit">+ Thêm vào Google Sheets</button>
+
+                    <button class="btn-primary" type="submit" id="word-submit-button">
+                        + Thêm vào Google Sheets
+                    </button>
+                    <button class="btn-ghost" type="button" id="cancel-edit-button" style="display:none;">
+                        Hủy sửa
+                    </button>
+                    <span id="edit-hint" class="edit-hint" style="display:none; margin-left:6px;">
+                        Đang sửa một từ đã lưu...
+                    </span>
                 </form>
             </section>
 
-            <!-- Card: danh sách + quiz -->
+            <!-- Danh sách từ -->
             <section class="card">
-                <div class="toolbar">
+                <div class="card-header-row">
                     <div>
                         <div class="card-title">Danh sách từ vựng</div>
                         <p class="card-description">
-                            Dữ liệu được load từ Google Sheets, có thể lọc và quiz nhanh.
+                            Dữ liệu được load từ Google Sheets. Có thể tìm kiếm, nghe phát âm, sửa / xóa.
                         </p>
                     </div>
-                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <div class="search-input">
-                            <input id="search-input" type="text"
-                                   placeholder="🔍 Tìm theo Word / Meaning / Folder..." />
-                        </div>
-                        <button class="btn-ghost" id="quiz-button">❓ Quiz nhanh</button>
+                    <div>
+                        <input id="search-input" type="text"
+                               placeholder="🔍 Tìm Word / Meaning / Folder..."
+                               style="padding:6px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px;" />
                     </div>
                 </div>
 
                 <div class="word-list" id="word-list">
                     <div class="word-row word-header">
                         <div>Word</div>
+                        <div>IPA</div>
                         <div>Meaning</div>
                         <div>Sentence</div>
                         <div>Type</div>
                         <div>Folder</div>
                         <div>Status</div>
+                        <div>Actions</div>
                     </div>
                     <div class="word-empty" id="word-empty">
                         Chưa có từ nào hoặc chưa load được dữ liệu.
                         Hãy bấm "Tải lại từ Sheets" hoặc thêm từ mới.
                     </div>
-                </div>
-
-                <div class="quiz-box" id="quiz-box" style="display:none;">
-                    <div class="quiz-question" id="quiz-question"></div>
-                    <div class="quiz-answer" id="quiz-answer"></div>
                 </div>
             </section>
         </main>
@@ -206,13 +215,56 @@
 
             <div class="modal-actions">
                 <button type="button" class="btn-ghost" id="cancel-change-password">Hủy</button>
-                <button type="submit" class="btn-primary" style="width:auto;">Lưu mật khẩu</button>
+                <button type="submit" class="btn-primary">Lưu mật khẩu</button>
             </div>
 
             <div id="change-password-message" class="modal-message"></div>
         </form>
     </div>
 </div>
+
+<!-- Popup AI spinner -->
+<div class="modal-backdrop" id="ai-modal" style="display:none;">
+    <div class="ai-card">
+        <div class="ai-title">🤖 Gemini đang gợi ý...</div>
+        <div class="ai-body">
+            <div class="ai-spinner"></div>
+            <div>
+                <div id="ai-word-label" class="ai-word-label"></div>
+                <div class="ai-text">
+                    Đang tạo IPA, nghĩa tiếng Việt, câu ví dụ và loại từ. Thường chỉ vài giây 💫
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup nhập Gemini key -->
+<div class="modal-backdrop" id="gemini-key-modal" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-title">Thiết lập Gemini API key</div>
+        <p class="modal-sub">
+            Dán Gemini API key đã được cấp. Hệ thống sẽ kiểm tra trùng với <b>cột C</b> trong sheet <b>Users</b>.
+        </p>
+
+        <form id="gemini-key-form" class="modal-form">
+            <div class="form-field">
+                <label for="gemini-key-input">Gemini API key</label>
+                <input type="text" id="gemini-key-input" autocomplete="off" />
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="cancel-gemini-key">Hủy</button>
+                <button type="submit" class="btn-primary">Lưu key</button>
+            </div>
+
+            <div id="gemini-key-message" class="modal-message"></div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
 
 <script src="main.js"></script>
 </body>

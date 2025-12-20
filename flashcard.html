@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcard Ôn Tập</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-shell">
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div>
+            <div class="logo-block">
+                <div class="logo-icon">A</div>
+                <div>
+                    <div class="logo-text-main">AI Vocab</div>
+                    <div class="logo-text-sub">Flashcard</div>
+                </div>
+            </div>
+
+            <nav class="nav">
+                <button class="nav-button" onclick="window.location.href='index.html'">
+                    📚 Từ vựng
+                </button>
+                <button class="nav-button active">
+                    🎴 Flashcard
+                </button>
+            </nav>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="account-card">
+                <div class="account-label">Tài khoản</div>
+                <div class="user-pill" id="user-display">—</div>
+                <button class="btn-ghost full-width" id="logout-button">Đăng xuất</button>
+            </div>
+
+            <div class="footer-note">AI Vocab — Flashcard</div>
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <main class="main">
+
+        <div class="main-header">
+            <div>
+                <div class="main-title">Flashcard ôn tập</div>
+                <div class="main-sub">Chọn folder và bắt đầu ôn tập</div>
+            </div>
+
+            <button class="btn-primary" id="flash-start">Bắt đầu</button>
+        </div>
+
+        <!-- Folder filter -->
+        <div id="flash-folder-row" class="word-list"></div>
+
+        <!-- Flashcard box -->
+        <section class="card flashcard-section">
+            <div class="flashcard-box">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-face" id="flashcard-word">Chưa có dữ liệu</div>
+                    <div class="flashcard-extra" id="flashcard-extra">Hãy chọn folder.</div>
+                </div>
+
+                <div class="flashcard-controls">
+                    <button class="mini-btn" id="flash-prev">⟨ Trước</button>
+                    <button class="mini-btn" id="flash-flip">🔁 Lật</button>
+                    <button class="mini-btn" id="flash-next">Tiếp ⟩</button>
+
+                    <span class="flashcard-progress" id="flashcard-progress"></span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="flashcard.js"></script>
+</body>
+</html>

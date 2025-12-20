@@ -332,6 +332,29 @@ body {
     margin-top:8px;
 }
 
+/* folder filter */
+.folder-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.folder-pill {
+    border: none;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    background: #e5e7eb;
+    color: #374151;
+    cursor: pointer;
+}
+
+.folder-pill.active {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
 /* tags */
 .tag-level {
     border-radius:999px;
@@ -537,10 +560,183 @@ body {
 #toast.show {
     animation: toastSlideIn 0.25s forwards;
 }
+
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.page-info {
+    color: #6b7280;
+}
+
+.page-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 12px;
+    background: #e5e7eb;
+    cursor: pointer;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
 @keyframes toastSlideIn {
     from { opacity: 0; transform: translateX(16px); }
     to   { opacity: 1; transform: translateX(0); }
 }
+/* ===============================
+   REVIEW SECTION
+=================================*/
+.review-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.review-option-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f9fafb;
+}
+.review-option-card:hover {
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    border-color: #4f46e5;
+    transform: translateY(-2px);
+}
+.review-icon {
+    font-size: 32px;
+    background: #eef2ff;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+.review-info h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    color: #111827;
+}
+.review-info p {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* FLASHCARD STYLES */
+.flashcard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+.flashcard-scene {
+    width: 320px;
+    height: 220px;
+    perspective: 1000px;
+}
+.flashcard {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    cursor: pointer;
+}
+.flashcard.is-flipped {
+    transform: rotateY(180deg);
+}
+.flashcard-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+}
+.flashcard-front {
+    background: #ffffff;
+    color: #111827;
+}
+.flashcard-back {
+    background: #f0fdf4; /* xanh nhạt */
+    color: #166534;
+    transform: rotateY(180deg);
+}
+.tap-hint {
+    margin-top: 12px;
+    font-size: 10px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.review-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+/* FILL GAME STYLES */
+.fill-game-container {
+    max-width: 400px;
+    margin: 20px auto;
+}
+.question-box {
+    background: #eff6ff;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+.q-text {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 4px;
+    color: #1e3a8a;
+}
+.q-label {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+.answer-box {
+    display: flex;
+    gap: 8px;
+}
+.feedback-msg {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 14px;
+    min-height: 20px;
+}
+.feedback-msg.correct { color: #16a34a; font-weight: 600; }
+.feedback-msg.wrong { color: #dc2626; font-weight: 600; }
 
 /* ===============================
    RESPONSIVE

@@ -14,6 +14,11 @@ const STATUS_CONFIG = [
 let words = [];
 let currentUser = null;
 let editingIndex = -1;
+let activeFolder = null;      // null = chưa chọn folder
+let currentFolderNames = []; 
+
+const PAGE_SIZE = 10;   // mỗi trang 10 từ
+let currentPage = 1;
 
 // ===== DOM ELEMENTS =====
 const wordForm        = document.getElementById("word-form");
@@ -21,6 +26,7 @@ const wordInput       = document.getElementById("word");
 const meaningInput    = document.getElementById("meaning");
 const folderInput     = document.getElementById("folder");
 const folderList      = document.getElementById("folder-list");
+
 const ipaInput        = document.getElementById("ipa");
 const typeInput       = document.getElementById("type");
 const statusSelect    = document.getElementById("status");
@@ -34,6 +40,7 @@ const wordListEl      = document.getElementById("word-list");
 const wordEmptyEl     = document.getElementById("word-empty");
 const totalCountPill  = document.getElementById("total-count-pill");
 const streakText      = document.getElementById("streak-text");
+const folderFilterRow = document.getElementById("folder-filter-row");
 const reloadButton    = document.getElementById("reload-button");
 const searchInput     = document.getElementById("search-input");
 
@@ -64,7 +71,7 @@ const geminiForm    = document.getElementById("gemini-key-form");
 const geminiInput   = document.getElementById("gemini-key-input");
 const geminiCancel  = document.getElementById("cancel-gemini-key");
 const geminiMessage = document.getElementById("gemini-key-message");
-
+const paginationEl   = document.getElementById("pagination");
 // ===== Toast helper =====
 function showToast(message, type = "info") {
     if (!toastEl) return;
@@ -280,28 +287,144 @@ function sendWordToGoogleSheet_Delete(index) {
 
 // ===== UI HELPERS =====
 
+// ✅ Cập nhật: gom folder + tạo chip, có kèm số lượng từ
 function updateFolderSuggestions() {
     if (!folderList) return;
 
-    // lấy folder duy nhất từ danh sách từ
     const set = new Set();
-
     words.forEach(w => {
         if (w.folder && w.folder.trim() !== "") {
             set.add(w.folder.trim());
         }
     });
 
-    // xoá option cũ
-    folderList.innerHTML = "";
+    const folders = Array.from(set).sort((a, b) => a.localeCompare(b));
+    currentFolderNames = folders;
 
-    // tạo option mới
-    set.forEach(f => {
+    // datalist cho ô input Folder
+    folderList.innerHTML = "";
+    folders.forEach(f => {
         const opt = document.createElement("option");
         opt.value = f;
         folderList.appendChild(opt);
     });
+
+    // chip filter
+    renderFolderFilters();
 }
+
+// ✅ Cập nhật: chip có số lượng, click chip mới renderWords
+function renderFolderFilters() {
+    if (!folderFilterRow) return;
+
+    folderFilterRow.innerHTML = "";
+
+    // 1. Tính toán số lượng
+    const counts = {};
+    let noFolderCount = 0; // Đếm số từ chưa có folder
+    let totalCount = words.length;
+
+    words.forEach(w => {
+        const f = (w.folder || "").trim();
+        if (!f) {
+            noFolderCount++;
+        } else {
+            counts[f] = (counts[f] || 0) + 1;
+        }
+    });
+
+    // 2. Nút "Tất cả"
+    const allLabel = `Tất cả (${totalCount})`;
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.textContent = allLabel;
+    allBtn.className = "folder-pill" + (activeFolder === "ALL" || activeFolder === null ? " active" : ""); 
+    // Mặc định activeFolder là 'ALL' hoặc null thì sáng nút này
+    
+    allBtn.addEventListener("click", () => {
+        activeFolder = "ALL";
+        currentPage = 1;
+        renderFolderFilters();
+        renderWords(searchInput.value);
+    });
+    folderFilterRow.appendChild(allBtn);
+
+    // 3. Nút "Chưa phân loại" (Chỉ hiện nếu có từ)
+    if (noFolderCount > 0) {
+        const noFolderBtn = document.createElement("button");
+        noFolderBtn.type = "button";
+        noFolderBtn.innerHTML = `📂 Chưa phân loại (${noFolderCount})`; // Dùng icon cho dễ nhìn
+        noFolderBtn.className = "folder-pill" + (activeFolder === "_NO_FOLDER_" ? " active" : "");
+        
+        noFolderBtn.addEventListener("click", () => {
+            activeFolder = "_NO_FOLDER_"; // Đặt mã đặc biệt
+            currentPage = 1;
+            renderFolderFilters();
+            renderWords(searchInput.value);
+        });
+        folderFilterRow.appendChild(noFolderBtn);
+    }
+
+    // 4. Các nút Folder khác
+    currentFolderNames.forEach(folderName => {
+        const count = counts[folderName] || 0;
+        const label = `${folderName} (${count})`;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = label;
+        btn.className = "folder-pill" + (activeFolder === folderName ? " active" : "");
+        btn.addEventListener("click", () => {
+            activeFolder = folderName;
+            currentPage = 1;
+            renderFolderFilters();
+            renderWords(searchInput.value);
+        });
+        folderFilterRow.appendChild(btn);
+    });
+}
+
+function renderPagination(totalPages, totalItems) {
+    if (!paginationEl) return;
+
+    paginationEl.innerHTML = "";
+
+    if (totalPages <= 1) {
+        return; // không cần phân trang
+    }
+
+    const info = document.createElement("span");
+    info.className = "page-info";
+    info.textContent = `Trang ${currentPage}/${totalPages} – ${totalItems} từ`;
+    paginationEl.appendChild(info);
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.textContent = "‹";
+    prevBtn.className = "page-btn";
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderWords(searchInput.value);
+        }
+    });
+    paginationEl.appendChild(prevBtn);
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.textContent = "›";
+    nextBtn.className = "page-btn";
+    nextBtn.disabled = currentPage >= totalPages;
+    nextBtn.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderWords(searchInput.value);
+        }
+    });
+    paginationEl.appendChild(nextBtn);
+}
+
 function getTypeTagClass(type) {
     if (!type) return "tag-other";
     const t = type.toLowerCase();
@@ -322,7 +445,8 @@ function updateCount() {
     const span = totalCountPill.querySelector("span:last-child");
     if (span) span.textContent = words.length + " từ";
 }
-//
+
+// streak
 function computeStreakDays(wordsArray) {
     let earliest = null;
 
@@ -341,12 +465,11 @@ function computeStreakDays(wordsArray) {
 
     const today = new Date();
 
-    // chỉ tính theo ngày (bỏ giờ)
     const start = new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate());
     const end   = new Date(today.getFullYear(),   today.getMonth(),   today.getDate());
 
     const diffMs   = end - start;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // +1 để tính cả ngày đầu tiên
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 
     return Math.max(diffDays, 1);
 }
@@ -416,7 +539,7 @@ function setEditMode(index) {
     }
 }
 
-// Render list
+// ✅ Render list có lọc folder + search, và ẩn khi chưa chọn folder
 function renderWords(filterText = "") {
     const rows = Array.from(wordListEl.querySelectorAll(".word-row"));
     rows.forEach((row, index) => {
@@ -424,10 +547,28 @@ function renderWords(filterText = "") {
         row.remove();
     });
 
-    let visibleCount = 0;
-    const text = filterText.trim().toLowerCase();
+    // Mặc định ban đầu vào là chọn ALL luôn cho người dùng dễ thấy
+    if (activeFolder === null) activeFolder = "ALL";
 
+    const text = (filterText || "").trim().toLowerCase();
+
+    // 1. Lọc dữ liệu
+    const filtered = [];
     words.forEach((w, index) => {
+        const f = (w.folder || "").trim();
+
+        // --- Logic lọc folder mới ---
+        if (activeFolder !== "ALL") {
+            if (activeFolder === "_NO_FOLDER_") {
+                // Nếu đang chọn "Chưa phân loại", chỉ lấy từ ko có folder
+                if (f !== "") return; 
+            } else {
+                // Nếu chọn folder thường, phải khớp tên
+                if (f !== activeFolder) return;
+            }
+        }
+
+        // Lọc theo search input
         if (text) {
             const match = (
                 (w.word || "")   + " " +
@@ -437,11 +578,40 @@ function renderWords(filterText = "") {
             if (!match) return;
         }
 
-        visibleCount++;
+        filtered.push({ w, index });
+    });
 
+    const totalItems = filtered.length;
+
+    if (totalItems === 0) {
+        wordEmptyEl.style.display = "block";
+        if (activeFolder === "_NO_FOLDER_") {
+            wordEmptyEl.textContent = "Bạn đã phân loại hết các từ rồi! (Không có từ nào chưa có folder)";
+        } else {
+            wordEmptyEl.textContent = "Không có từ nào trong mục này.";
+        }
+        if (paginationEl) paginationEl.innerHTML = "";
+        return;
+    } else {
+        wordEmptyEl.style.display = "none";
+    }
+
+    // 2. Phân trang & Render (Giữ nguyên logic cũ)
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end   = start + PAGE_SIZE;
+    const pageItems = filtered.slice(start, end);
+
+    pageItems.forEach(({ w, index }) => {
         const row = document.createElement("div");
         row.className = "word-row";
 
+        // ... Tạo các cột (Word, IPA, Meaning...) - Code phần này giữ nguyên như cũ ...
+        // (Để tiết kiệm không gian chat, bạn giữ nguyên phần tạo HTML bên trong vòng lặp này nhé)
+        // Chỉ cần copy đoạn tạo row cũ paste vào đây
+        
         const wordCell = document.createElement("div");
         wordCell.textContent = w.word;
 
@@ -461,7 +631,7 @@ function renderWords(filterText = "") {
         typeCell.appendChild(typeSpan);
 
         const folderCell = document.createElement("div");
-        folderCell.textContent = w.folder || "—";
+        folderCell.textContent = w.folder || "—"; // Hiển thị dấu gạch nếu ko có folder
 
         const statusCell = document.createElement("div");
         const statusSpan = document.createElement("span");
@@ -472,47 +642,40 @@ function renderWords(filterText = "") {
         const actionsCell = document.createElement("div");
         actionsCell.className = "word-actions";
 
+        // Các nút Sound, Edit, Delete
         const soundBtn = document.createElement("button");
         soundBtn.type = "button";
         soundBtn.textContent = "🔊";
-        soundBtn.title = "Phát âm word";
         soundBtn.className = "mini-btn voice";
-        soundBtn.addEventListener("click", () => {
-            playPronunciation(w.word);
-        });
+        soundBtn.addEventListener("click", () => playPronunciation(w.word));
 
         const editBtn = document.createElement("button");
         editBtn.type = "button";
         editBtn.textContent = "Sửa";
         editBtn.className = "mini-btn edit";
-        editBtn.addEventListener("click", () => {
-            setEditMode(index);
-        });
+        editBtn.addEventListener("click", () => setEditMode(index));
 
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.textContent = "Xóa";
         delBtn.className = "mini-btn delete";
         delBtn.addEventListener("click", async () => {
-            if (!confirm(`Xóa từ "${w.word}"?`)) return;
-            try {
+             if (!confirm(`Xóa từ "${w.word}"?`)) return;
+             try {
                 const data = await sendWordToGoogleSheet_Delete(index);
                 if (data && data.status === "success") {
                     words.splice(index, 1);
                     renderWords(searchInput.value);
                     updateCount();
-                    if (editingIndex === index) {
-                        setEditMode(-1);
-                    }
-                    showToast("Đã xóa từ khỏi Sheets", "success");
+                    if (editingIndex === index) setEditMode(-1);
+                    updateFolderSuggestions(); 
+                    showToast("Đã xóa từ", "success");
                 } else {
-                    alert(data && data.message ? data.message : "Xóa thất bại");
-                    showToast("Xóa từ thất bại", "error");
+                    showToast("Xóa thất bại", "error");
                 }
             } catch (err) {
-                console.error("Delete error:", err);
-                alert("Lỗi khi xóa từ.");
-                showToast("Lỗi khi xóa từ", "error");
+                console.error(err);
+                showToast("Lỗi kết nối", "error");
             }
         });
 
@@ -532,7 +695,7 @@ function renderWords(filterText = "") {
         wordListEl.appendChild(row);
     });
 
-    wordEmptyEl.style.display = (words.length === 0 || visibleCount === 0) ? "block" : "none";
+    renderPagination(totalPages, totalItems);
 }
 
 // ===== AI – GỌI GEMINI =====
@@ -558,12 +721,12 @@ Hãy trả về đúng JSON, KHÔNG có text nào ngoài JSON:
     const body = { contents: [ { parts: [ { text: prompt } ] } ] };
 
     const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-robotics-er-1.5-preview:generateContent?key=" + encodeURIComponent(key),
-    {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    }
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-robotics-er-1.5-preview:generateContent?key=" + encodeURIComponent(key),
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        }
     );
 
     if (!res.ok) {
@@ -593,12 +756,12 @@ async function testGeminiKey(key) {
     };
 
     const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key),
-    {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    }
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key),
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        }
     );
 
     if (!res.ok) {
@@ -651,11 +814,11 @@ if (wordForm) {
             });
             renderWords(searchInput.value);
             updateCount();
-            updateStreak();             // cập nhật chuỗi ngày học ngay sau khi thêm
+            updateStreak();
             updateFolderSuggestions();
             sendWordToGoogleSheet_Add(newWord);
             setEditMode(-1);
-        }else {
+        } else {
             try {
                 const data = await sendWordToGoogleSheet_Update(editingIndex, newWord);
                 if (data && data.status === "success") {
@@ -698,6 +861,7 @@ if (reloadButton) {
 
 if (searchInput) {
     searchInput.addEventListener("input", e => {
+        currentPage = 1;                  // reset về trang đầu
         renderWords(e.target.value);
     });
 }
@@ -814,13 +978,10 @@ if (geminiForm) {
         geminiMessage.className = "modal-message";
 
         try {
-            // 1. Test kết nối tới Gemini
             await testGeminiKey(key);
 
-            // 2. Lưu localStorage
             localStorage.setItem(GEMINI_KEY_STORAGE_KEY, key);
 
-            // 3. Gửi lên server để lưu vào cột C (sheet Users)
             const res = await fetch(LOGIN_API_URL, {
                 method: "POST",
                 mode: "cors",
@@ -841,7 +1002,6 @@ if (geminiForm) {
             }
 
             if (data && data.status === "success") {
-                // cập nhật profile trong localStorage
                 currentUser.geminiKey = key;
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
 
@@ -873,7 +1033,6 @@ if (aiButton) {
             return;
         }
 
-        // Nếu chưa có key (cột C trống + localStorage trống) => popup
         if (!getGeminiKey()) {
             showToast("Bạn chưa thiết lập Gemini API key", "info");
             openGeminiModal();
@@ -911,10 +1070,249 @@ if (aiButton) {
     });
 }
 
+// ==========================================
+// REVIEW SYSTEM LOGIC (ĐỘC LẬP HOÀN TOÀN)
+// ==========================================
+
+let reviewList = [];       // Danh sách từ để ôn
+let currentReviewIdx = 0;  // Vị trí hiện tại
+let pendingMode = "";      // Lưu tạm chế độ đang chọn (flashcard/fill)
+
+// 1. Điều hướng Tab
+function showSection(sectionId) {
+    const vocabSection  = document.querySelector('section.card:nth-of-type(1)');
+    const listSection   = document.querySelector('section.card:nth-of-type(2)');
+    const reviewSection = document.getElementById('review-section');
+
+    const navVocab  = document.querySelector('.nav-button[onclick="showSection(\'vocab\')"]');
+    const navReview = document.querySelector('.nav-button[onclick="showSection(\'review\')"]');
+
+    if (sectionId === 'review') {
+        if (vocabSection) vocabSection.style.display = 'none';
+        if (listSection) listSection.style.display = 'none';
+        if (reviewSection) reviewSection.style.display = 'block';
+        
+        if (navVocab) navVocab.classList.remove('active');
+        if (navReview) navReview.classList.add('active');
+        
+        backToReviewMenu(); // Luôn về menu chính khi bấm tab
+    } else {
+        if (vocabSection) vocabSection.style.display = 'block';
+        if (listSection) listSection.style.display = 'block';
+        if (reviewSection) reviewSection.style.display = 'none';
+
+        if (navVocab) navVocab.classList.add('active');
+        if (navReview) navReview.classList.remove('active');
+    }
+}
+
+// 2. Navigation trong Review
+function backToReviewMenu() {
+    document.getElementById('review-menu').style.display = 'block';
+    document.getElementById('review-folder-selection').style.display = 'none';
+    document.getElementById('mode-flashcard').style.display = 'none';
+    document.getElementById('mode-fill').style.display = 'none';
+}
+
+function backToReviewFolder() {
+    // Từ game quay lại màn chọn folder
+    document.getElementById('mode-flashcard').style.display = 'none';
+    document.getElementById('mode-fill').style.display = 'none';
+    document.getElementById('review-folder-selection').style.display = 'block';
+}
+
+// 3. Bước 1: Chọn Game -> Hiện màn hình chọn Folder
+function startReviewSetup(mode) {
+    if (words.length === 0) {
+        alert("Chưa có từ vựng nào để ôn tập!");
+        return;
+    }
+
+    pendingMode = mode; 
+
+    // Ẩn menu, hiện màn hình chọn folder
+    document.getElementById('review-menu').style.display = 'none';
+    document.getElementById('review-folder-selection').style.display = 'block';
+
+    const selectEl = document.getElementById('review-folder-select');
+    selectEl.innerHTML = "";
+
+    // --- LOGIC MỚI: Đếm folder & từ chưa phân loại ---
+    const folderCounts = {};
+    let noFolderCount = 0; // Biến đếm từ không có folder
+
+    words.forEach(w => {
+        const f = (w.folder || "").trim();
+        if (!f) {
+            noFolderCount++; // Tăng đếm nếu không có folder
+        } else {
+            folderCounts[f] = (folderCounts[f] || 0) + 1;
+        }
+    });
+
+    // Option 1: Tất cả
+    const allOpt = document.createElement("option");
+    allOpt.value = "ALL";
+    allOpt.textContent = `Tất cả (${words.length} từ)`;
+    selectEl.appendChild(allOpt);
+
+    // Option 2: Chưa phân loại (Chỉ hiện nếu có từ)
+    if (noFolderCount > 0) {
+        const noFolderOpt = document.createElement("option");
+        noFolderOpt.value = "_NO_FOLDER_"; // Giá trị đặc biệt để nhận biết
+        noFolderOpt.textContent = `📂 Chưa phân loại (${noFolderCount} từ)`;
+        noFolderOpt.style.fontStyle = "italic";
+        selectEl.appendChild(noFolderOpt);
+    }
+
+    // Option 3: Các folder khác (Sắp xếp A-Z)
+    Object.keys(folderCounts).sort().forEach(folderName => {
+        const opt = document.createElement("option");
+        opt.value = folderName;
+        opt.textContent = `${folderName} (${folderCounts[folderName]} từ)`;
+        selectEl.appendChild(opt);
+    });
+}
+
+// 4. Bước 2: Bấm "Bắt đầu ngay" -> Vào Game
+function confirmStartGame() {
+    const selectEl = document.getElementById('review-folder-select');
+    const selectedFolder = selectEl.value;
+
+    reviewList = [];
+
+    // --- LOGIC MỚI: Xử lý lọc danh sách ---
+    if (selectedFolder === "ALL") {
+        // Lấy hết
+        reviewList = [...words];
+    } 
+    else if (selectedFolder === "_NO_FOLDER_") {
+        // Lấy những từ folder rỗng
+        reviewList = words.filter(w => !(w.folder || "").trim());
+    } 
+    else {
+        // Lấy theo tên folder cụ thể
+        reviewList = words.filter(w => (w.folder || "").trim() === selectedFolder);
+    }
+
+    if (reviewList.length === 0) {
+        alert("Danh sách trống!");
+        return;
+    }
+
+    // Xáo trộn danh sách
+    reviewList.sort(() => Math.random() - 0.5);
+    currentReviewIdx = 0;
+
+    // Ẩn màn chọn folder -> Hiện game
+    document.getElementById('review-folder-selection').style.display = 'none';
+
+    if (pendingMode === 'flashcard') {
+        document.getElementById('mode-flashcard').style.display = 'block';
+        renderFlashcard();
+    } else if (pendingMode === 'fill') {
+        document.getElementById('mode-fill').style.display = 'block';
+        renderFillQuestion();
+    }
+}
+// 5. Logic Game: Flashcard
+function renderFlashcard() {
+    const w = reviewList[currentReviewIdx];
+    const cardEl = document.getElementById('flashcard-el');
+    
+    // Reset về mặt trước
+    cardEl.classList.remove('is-flipped');
+    
+    setTimeout(() => {
+        document.getElementById('fc-word').textContent = w.word;
+        document.getElementById('fc-ipa').textContent = w.ipa || "";
+        document.getElementById('fc-meaning').textContent = w.meaning;
+        document.getElementById('fc-sentence').textContent = w.sentence || "(Chưa có ví dụ)";
+        document.getElementById('fc-progress').textContent = `${currentReviewIdx + 1} / ${reviewList.length}`;
+    }, 200);
+}
+
+function flipCard() {
+    document.getElementById('flashcard-el').classList.toggle('is-flipped');
+}
+
+function nextFlashcard() {
+    if (currentReviewIdx < reviewList.length - 1) {
+        currentReviewIdx++;
+        renderFlashcard();
+    } else {
+        alert("Chúc mừng! Bạn đã ôn hết danh sách.");
+        backToReviewFolder();
+    }
+}
+
+function prevFlashcard() {
+    if (currentReviewIdx > 0) {
+        currentReviewIdx--;
+        renderFlashcard();
+    }
+}
+
+// 6. Logic Game: Fill in blank
+function renderFillQuestion() {
+    const w = reviewList[currentReviewIdx];
+    
+    document.getElementById('fill-meaning').textContent = w.meaning;
+    document.getElementById('fill-folder').textContent = w.folder || "Chung";
+    
+    const input = document.getElementById('fill-input');
+    input.value = "";
+    input.disabled = false;
+    input.focus();
+    
+    const feedback = document.getElementById('fill-feedback');
+    feedback.textContent = "";
+    feedback.className = "feedback-msg";
+}
+
+function checkFillAnswer() {
+    const w = reviewList[currentReviewIdx];
+    const input = document.getElementById('fill-input');
+    const userVal = input.value.trim().toLowerCase();
+    const correctVal = w.word.trim().toLowerCase();
+    const feedback = document.getElementById('fill-feedback');
+
+    if (!userVal) return;
+
+    if (userVal === correctVal) {
+        feedback.textContent = "🎉 Chính xác! " + w.word;
+        feedback.className = "feedback-msg correct";
+        input.disabled = true;
+        playPronunciation(w.word); 
+    } else {
+        feedback.textContent = `Sai rồi. Đáp án đúng: ${w.word}`;
+        feedback.className = "feedback-msg wrong";
+    }
+}
+
+function nextFillQuestion() {
+    if (currentReviewIdx < reviewList.length - 1) {
+        currentReviewIdx++;
+        renderFillQuestion();
+    } else {
+        alert("Chúc mừng! Bạn đã hoàn thành bài ôn tập.");
+        backToReviewFolder();
+    }
+}
+
+// Hỗ trợ nhấn Enter
+const fillEl = document.getElementById('fill-input');
+if (fillEl) {
+    fillEl.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            checkFillAnswer();
+        }
+    });
+}
 // ===== INIT =====
 function initStatusSelectOptions() {
     if (!statusSelect) return;
-    statusSelect.innerHTML = ""; // xoá option cũ trong HTML
+    statusSelect.innerHTML = "";
 
     STATUS_CONFIG.forEach(st => {
         const opt = document.createElement("option");
@@ -923,12 +1321,13 @@ function initStatusSelectOptions() {
         statusSelect.appendChild(opt);
     });
 }
+
 (async function init() {
     requireLoginOrRedirect();
     initStatusSelectOptions();
     await fetchWordsFromSheet();
-    renderWords();
+    renderWords();          // activeFolder = null => chỉ hiện hướng dẫn
     updateCount();
     updateStreak();
-    updateFolderSuggestions();   // 👈 thêm dòng này
+    updateFolderSuggestions();
 })();

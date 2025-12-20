@@ -25,20 +25,14 @@
                     <span id="streak-text">Chuỗi ngày học: <b>0 ngày</b></span>
                 </div>
 
-                <nav class="nav">
-                    <button class="nav-button active">
-                        <span class="icon">📘</span>
-                        <span>Từ vựng & Sổ tay</span>
-                    </button>
-                    <button class="nav-button">
-                        <span class="icon">📚</span>
-                        <span>Ngữ pháp (sau này)</span>
-                    </button>
-                    <button class="nav-button">
-                        <span class="icon">🎧</span>
-                        <span>Nghe & phát âm (sau này)</span>
-                    </button>
-                </nav>
+                <div class="nav">
+                <button class="nav-button active" onclick="showSection('vocab')">
+                📚 Từ vựng
+                </button>
+                <button class="nav-button" onclick="showSection('review')">
+                🧠 Ôn tập
+                </button>
+                </div>
 
                 <div class="goal-card">
                     <h3>Mục tiêu hôm nay</h3>
@@ -171,7 +165,7 @@
                                style="padding:6px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px;" />
                     </div>
                 </div>
-
+                 <div class="folder-filter-row" id="folder-filter-row"></div>
                 <div class="word-list" id="word-list">
                     <div class="word-row word-header">
                         <div>Word</div>
@@ -188,7 +182,95 @@
                         Hãy bấm "Tải lại từ Sheets" hoặc thêm từ mới.
                     </div>
                 </div>
+                <div class="pagination" id="pagination"></div>
             </section>
+        <section id="review-section" class="card" style="display:none;">
+            
+            <div id="review-menu">
+                <div class="card-header-row">
+                    <div class="card-title">Trung tâm ôn tập</div>
+                    <p class="card-description">Chọn phương pháp bạn muốn học hôm nay</p>
+                </div>
+                
+                <div class="review-grid">
+                    <div class="review-option-card" onclick="startReviewSetup('flashcard')">
+                        <div class="review-icon">🎴</div>
+                        <div class="review-info">
+                            <h3>Flashcards</h3>
+                            <p>Lật thẻ kiểm tra trí nhớ.</p>
+                        </div>
+                    </div>
+
+                    <div class="review-option-card" onclick="startReviewSetup('fill')">
+                        <div class="review-icon">✍️</div>
+                        <div class="review-info">
+                            <h3>Điền từ</h3>
+                            <p>Nhìn nghĩa, gõ từ tiếng Anh.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="review-folder-selection" style="display:none; text-align:center; padding: 20px 0;">
+                <div class="card-title" style="margin-bottom:12px;">Bạn muốn ôn chủ đề nào?</div>
+                
+                <div style="max-width: 300px; margin: 0 auto 20px;">
+                    <label style="display:block; text-align:left; font-size:12px; margin-bottom:4px; color:#6b7280;">Chọn Folder:</label>
+                    <select id="review-folder-select" style="width:100%; padding:10px; border-radius:12px; border:1px solid #d1d5db; outline:none;">
+                        </select>
+                </div>
+
+                <div class="review-actions" style="justify-content:center; gap:10px; display:flex;">
+                    <button class="btn-ghost" onclick="backToReviewMenu()">Quay lại</button>
+                    <button class="btn-primary" onclick="confirmStartGame()">🚀 Bắt đầu ngay</button>
+                </div>
+            </div>
+
+            <div id="mode-flashcard" style="display:none;">
+                <button class="btn-ghost" onclick="backToReviewFolder()">← Chọn lại chủ đề</button>
+                <div class="flashcard-container">
+                    <div class="flashcard-scene">
+                        <div class="flashcard" id="flashcard-el" onclick="flipCard()">
+                            <div class="flashcard-face flashcard-front">
+                                <h2 id="fc-word">Word</h2>
+                                <p id="fc-ipa" style="color:#6b7280;">/ipa/</p>
+                                <div class="tap-hint">Chạm để lật</div>
+                            </div>
+                            <div class="flashcard-face flashcard-back">
+                                <div id="fc-meaning" style="font-weight:600; font-size:18px;">Nghĩa</div>
+                                <p id="fc-sentence" style="margin-top:8px; font-style:italic; color:#4b5563;">Sentence</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-controls">
+                        <button class="btn-ghost" onclick="prevFlashcard()">Trước</button>
+                        <span id="fc-progress">0/0</span>
+                        <button class="btn-primary" onclick="nextFlashcard()">Tiếp theo →</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mode-fill" style="display:none;">
+                <button class="btn-ghost" onclick="backToReviewFolder()">← Chọn lại chủ đề</button>
+                <div class="fill-game-container">
+                    <div class="question-box">
+                        <div class="q-label">Nghĩa tiếng Việt:</div>
+                        <div id="fill-meaning" class="q-text">...</div>
+                        <div class="q-label" style="margin-top:12px;">Chủ đề: <span id="fill-folder" style="font-weight:normal">...</span></div>
+                    </div>
+                    <div class="answer-box">
+                        <input type="text" id="fill-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" />
+                        <button class="btn-primary" onclick="checkFillAnswer()">Check</button>
+                    </div>
+                    <div id="fill-feedback" class="feedback-msg"></div>
+                    <div class="review-controls" style="justify-content: center; margin-top:20px;">
+                        <button class="btn-ghost" onclick="nextFillQuestion()">Câu tiếp theo →</button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
         </main>
     </div>
 </div>

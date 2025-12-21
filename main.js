@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbysQe1fq1llREqJFbXacfMtGmOC-vgEaTBSto9wLsVUzVtg7EDw-T2NMoK0fvXuRrsY/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwk6dmcLq0dAjeVJmsBrNk4kkpfeMl4LqNNTAZL4Ow1SwAxwMOWVE_zobpzZuxn9zoe/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -91,6 +91,53 @@ function showToast(message, type = "info") {
 }
 
 // ===== LOGIN =====
+
+async function syncAccountStatus() {
+    if (!currentUser || !currentUser.email) return;
+
+    try {
+        // Gọi về Server kiểm tra trạng thái mới nhất
+        const res = await fetch(LOGIN_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ 
+                action: "checkStatus", 
+                email: currentUser.email 
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+            const newExpiry = data.expiryDate;
+            const oldExpiry = currentUser.expiryDate;
+
+            // Nếu ngày hạn thay đổi (do Admin vừa gia hạn)
+            if (newExpiry !== oldExpiry) {
+                console.log("Phát hiện thay đổi ngày hết hạn:", newExpiry);
+                
+                // 1. Cập nhật vào bộ nhớ trình duyệt
+                currentUser.expiryDate = newExpiry;
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+
+                // 2. Kiểm tra lại xem đã Hết hạn hay Còn hạn
+                if (!isExpired()) {
+                    // Nếu TỪ HẾT HẠN -> THÀNH CÒN HẠN
+                    showToast("🎉 Tài khoản đã được gia hạn thành công!", "success");
+                    
+                    // Reset giao diện về bình thường (Xóa màu đỏ nếu có)
+                    updateUserUI_Active();
+                    
+                    // Đóng popup đòi tiền nếu đang mở
+                    closePremiumPopup();
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Lỗi đồng bộ trạng thái:", err);
+    }
+}
 function requireLoginOrRedirect() {
     try {
         const raw = localStorage.getItem(USER_STORAGE_KEY);
@@ -124,6 +171,17 @@ function updateUserUI() {
         userDisplay.textContent = currentUser.email;
     } else {
         userDisplay.textContent = "Khách (chưa đăng nhập)";
+    }
+}
+
+function updateUserUI_Active() {
+    const userPill = document.getElementById("user-display");
+    if (userPill) {
+        userPill.style.background = ""; // Reset về mặc định
+        userPill.style.color = "";
+        userPill.style.border = "";
+        // Xóa chữ (Hết hạn) nếu có
+        userPill.textContent = userPill.textContent.replace(" (Hết hạn)", "");
     }
 }
 
@@ -1473,7 +1531,7 @@ function isExpired() {
     const expiryStr = currentUser.expiryDate;
     
     // Nếu không có ngày hạn => Coi như hết hạn
-    if (!expiryStr) return true;
+    if (!expiryStr || expiryStr.trim() === "") return true;
 
     const expiryDate = new Date(expiryStr);
     const now = new Date();
@@ -1747,6 +1805,51 @@ if (irrInput) {
         triggerSearchIrregular();
     });
 }
+
+
+// Biến lưu trạng thái để tránh báo lặp lại liên tục
+let hasNotifiedExpiration = false;
+
+// Hàm chạy ngầm: Tự động kiểm tra hạn mỗi 60 giây
+function startExpirationLoop() {
+    // Chạy ngay lập tức 1 lần khi gọi
+    checkAndNotify();
+
+    // Sau đó lặp lại mỗi 60s
+    setInterval(() => {
+        checkAndNotify();
+    }, 60000); 
+}
+
+function checkAndNotify() {
+    // Nếu hết hạn VÀ chưa thông báo lần nào trong phiên này
+    if (isExpired()) {
+        if (!hasNotifiedExpiration) {
+            // 1. Hiện thông báo Toast
+            showToast("Tài khoản đã hết hạn. Chuyển sang chế độ CHỈ XEM.", "error");
+            
+            // 2. Cập nhật giao diện (Thêm nhãn "Hết hạn" cạnh tên user hoặc logo)
+            updateUserUI_Expired();
+            
+            // Đánh dấu là đã báo rồi để ko spam toast mỗi phút
+            hasNotifiedExpiration = true; 
+        }
+    }
+}
+
+// Hàm cập nhật giao diện khi biết là hết hạn
+function updateUserUI_Expired() {
+    const userPill = document.getElementById("user-display");
+    if (userPill) {
+        userPill.style.background = "#fee2e2"; // Màu đỏ nhạt
+        userPill.style.color = "#b91c1c";
+        userPill.style.border = "1px solid #ef4444";
+        // Thêm chữ (Expired)
+        if (!userPill.textContent.includes("(Hết hạn)")) {
+            userPill.textContent += " (Hết hạn)";
+        }
+    }
+}
 // ===== INIT =====
 function initStatusSelectOptions() {
     if (!statusSelect) return;
@@ -1760,17 +1863,29 @@ function initStatusSelectOptions() {
     });
 }
 
+
 (async function init() {
     requireLoginOrRedirect();
 
-    // Nếu hết hạn, có thể hiện 1 cái Toast nhắc nhở nhẹ (Optional)
+    // 1. Đồng bộ trạng thái mới nhất từ Sheet (QUAN TRỌNG)
+    // Dùng 'await' để đảm bảo lấy được ngày mới TRƯỚC KHI hiển thị dữ liệu
+    await syncAccountStatus(); 
+
+    // 2. Kích hoạt vòng lặp kiểm tra treo máy
+    startExpirationLoop();
+
+    // 3. Nếu vẫn hết hạn (sau khi đã sync) thì báo lỗi
     if (isExpired()) {
-        showToast("Tài khoản hết hạn. Bạn đang ở chế độ Xem.", "error");
+        showToast("Tài khoản hết hạn. Bạn đang ở chế độ Chỉ Xem.", "error");
+        updateUserUI_Expired(); // Đổi màu đỏ ngay
+    } else {
+        // Nếu còn hạn thì đảm bảo giao diện sạch sẽ
+        updateUserUI_Active();
     }
 
     initStatusSelectOptions();
     await fetchWordsFromSheet();
-    renderWords(); // Vẫn load danh sách từ cho họ xem (nhưng không sửa/xóa được)
+    renderWords();
     updateCount();
     updateStreak();
     updateFolderSuggestions();

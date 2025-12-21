@@ -1,4 +1,4 @@
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbyMVoAqgOmAHywk4AVF0xRM_wKIMqiPEUmjQp7CRvn8NaJjflSVrl47n539Isrd6vRh/exec";
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwk6dmcLq0dAjeVJmsBrNk4kkpfeMl4LqNNTAZL4Ow1SwAxwMOWVE_zobpzZuxn9zoe/exec";
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 

@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwk6dmcLq0dAjeVJmsBrNk4kkpfeMl4LqNNTAZL4Ow1SwAxwMOWVE_zobpzZuxn9zoe/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzGsNgcSExnTA8XVQZ5iJmu7hvjgNYfGw7IU294sV3a1VkmkuN7gQ3AENgLbb1LtOv1/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -94,49 +94,29 @@ function showToast(message, type = "info") {
 
 async function syncAccountStatus() {
     if (!currentUser || !currentUser.email) return;
-
     try {
-        // Gọi về Server kiểm tra trạng thái mới nhất
         const res = await fetch(LOGIN_API_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ 
-                action: "checkStatus", 
-                email: currentUser.email 
-            })
+            method: "POST", mode: "cors",
+            body: JSON.stringify({ action: "checkStatus", email: currentUser.email })
         });
-
         const data = await res.json();
-
         if (data.status === "success") {
             const newExpiry = data.expiryDate;
-            const oldExpiry = currentUser.expiryDate;
+            const newReg    = data.regDate;
+            
+            // Cập nhật cả 2 ngày
+            currentUser.expiryDate = newExpiry;
+            currentUser.regDate    = newReg;
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
 
-            // Nếu ngày hạn thay đổi (do Admin vừa gia hạn)
-            if (newExpiry !== oldExpiry) {
-                console.log("Phát hiện thay đổi ngày hết hạn:", newExpiry);
-                
-                // 1. Cập nhật vào bộ nhớ trình duyệt
-                currentUser.expiryDate = newExpiry;
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
-
-                // 2. Kiểm tra lại xem đã Hết hạn hay Còn hạn
-                if (!isExpired()) {
-                    // Nếu TỪ HẾT HẠN -> THÀNH CÒN HẠN
-                    showToast("🎉 Tài khoản đã được gia hạn thành công!", "success");
-                    
-                    // Reset giao diện về bình thường (Xóa màu đỏ nếu có)
-                    updateUserUI_Active();
-                    
-                    // Đóng popup đòi tiền nếu đang mở
-                    closePremiumPopup();
-                }
+            // Nếu user vừa nạp tiền (Gói trả phí active)
+            if (!isPaidExpired()) {
+                showToast("🎉 Tài khoản VIP đang hoạt động!", "success");
+                updateUserUI_Active();
+                closePremiumPopup();
             }
         }
-    } catch (err) {
-        console.error("Lỗi đồng bộ trạng thái:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 function requireLoginOrRedirect() {
     try {
@@ -182,6 +162,20 @@ function updateUserUI_Active() {
         userPill.style.border = "";
         // Xóa chữ (Hết hạn) nếu có
         userPill.textContent = userPill.textContent.replace(" (Hết hạn)", "");
+    }
+}
+
+// Cập nhật giao diện lúc vào trang (init)
+function updateUI_InitState() {
+    if (isPaidExpired()) {
+        if (isTrialActive()) {
+            // Đang dùng thử
+            showToast(`Chào bạn mới! Bạn còn ${getTrialRemainingTime()} dùng thử.`, "info");
+        } else {
+            // Hết sạch hạn
+            showToast("Hết hạn dùng thử. Vui lòng gia hạn.", "error");
+            updateUserUI_Expired();
+        }
     }
 }
 
@@ -481,6 +475,40 @@ function renderPagination(totalPages, totalItems) {
         }
     });
     paginationEl.appendChild(nextBtn);
+}
+
+function renderUserStatus() {
+    const userPill = document.getElementById("user-display");
+    if (!userPill || !currentUser) return;
+
+    let tagHtml = "";
+    let borderColor = "#e5e7eb"; // Màu viền mặc định của nút User
+
+    // LOGIC XÁC ĐỊNH TRẠNG THÁI
+    if (!isPaidExpired()) {
+        tagHtml = `<span class="status-tag tag-active">VIP</span>`; // Viết tắt cho gọn
+        borderColor = "#10b981"; 
+        userPill.style.background = "#f0fdf4"; // Nền xanh rất nhạt
+    } else if (isTrialActive()) {
+        tagHtml = `<span class="status-tag tag-trial">Trial</span>`; // Viết tắt
+        borderColor = "#f59e0b"; 
+        userPill.style.background = "#fffbeb"; 
+    } else {
+        tagHtml = `<span class="status-tag tag-expired">Hết Hạn</span>`; // Viết tắt
+        borderColor = "#ef4444"; 
+        userPill.style.background = "#fef2f2";
+    }
+
+    // Hiển thị: Icon + Tên + Tag
+    // (currentUser.name ưu tiên, nếu không có lấy email)
+    const displayName = currentUser.email ? currentUser.email.split('@')[0] : "User";
+
+    userPill.innerHTML = `
+        <span style="font-size:16px;">👤</span> 
+        <span class="user-name-text" title="${displayName}">${displayName}</span> 
+        ${tagHtml}
+    `;
+    userPill.style.border = `1px solid ${borderColor}`;
 }
 
 function getTypeTagClass(type) {
@@ -1526,6 +1554,54 @@ function nextScrambleQuestion() {
     }
 }
 
+// ==========================================
+// LOGIC DÙNG THỬ 24H & CHECK QUYỀN
+// ==========================================
+
+// Hàm kiểm tra xem tài khoản CHÍNH THỨC có hết hạn không
+function isPaidExpired() {
+    if (!currentUser) return true;
+    const expiryStr = currentUser.expiryDate;
+    
+    // Nếu không có ngày hạn -> Coi như chưa kích hoạt gói trả phí
+    if (!expiryStr || expiryStr.trim() === "") return true;
+
+    const expiryDate = new Date(expiryStr);
+    const now = new Date();
+    expiryDate.setHours(23, 59, 59, 999);
+    
+    return now > expiryDate;
+}
+
+// Hàm kiểm tra xem có còn trong thời gian DÙNG THỬ (24h) không
+function isTrialActive() {
+    if (!currentUser || !currentUser.regDate) return false;
+
+    const regDate = new Date(currentUser.regDate);
+    const now = new Date();
+    
+    // Tính thời điểm hết hạn dùng thử (Ngày đăng ký + 24 giờ)
+    const trialEndTime = new Date(regDate.getTime() + (24 * 60 * 60 * 1000));
+    
+    // Nếu hiện tại vẫn nhỏ hơn thời điểm hết trial -> Còn dùng được
+    return now < trialEndTime;
+}
+
+// Hàm tính thời gian còn lại (để hiển thị cho user sướng)
+function getTrialRemainingTime() {
+    if (!currentUser.regDate) return "";
+    const regDate = new Date(currentUser.regDate);
+    const trialEndTime = new Date(regDate.getTime() + (24 * 60 * 60 * 1000));
+    const now = new Date();
+    
+    const diffMs = trialEndTime - now;
+    if (diffMs <= 0) return "0 giờ";
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours} giờ ${minutes} phút`;
+}
+
 function isExpired() {
     if (!currentUser) return true;
     const expiryStr = currentUser.expiryDate;
@@ -1554,11 +1630,21 @@ function closePremiumPopup() {
 
 // Hàm Wrapper: Kiểm tra quyền trước khi thực hiện hành động
 function checkAccess() {
-    if (isExpired()) {
-        showPremiumPopup();
-        return false; // Chặn lại
+    if (!isPaidExpired()) {
+        return true; 
     }
-    return true; // Cho qua
+
+    // 2. Nếu không, kiểm tra gói Dùng thử
+    if (isTrialActive()) {
+        const remaining = getTrialRemainingTime();
+        // Hiện thông báo nhẹ mỗi lần dùng để nhắc khéo
+        showToast(`⚡ Dùng thử miễn phí: Còn ${remaining}`, "warning");
+        return true; // Cho qua
+    }
+
+    // 3. Hết cả trả phí lẫn dùng thử -> CHẶN
+    showPremiumPopup();
+    return false;
 }
 
 // Hàm phụ trợ logout nhanh
@@ -1837,16 +1923,96 @@ function checkAndNotify() {
     }
 }
 
+let expirationInterval = null;
+
+// Hàm khởi chạy vòng lặp kiểm tra (Gọi trong init)
+function startRealtimeLoop() {
+    // Chạy ngay lập tức để render UI
+    checkAndRenderStatus();
+
+    // Sau đó lặp lại mỗi 1 giây (1000ms) để đếm ngược mượt mà
+    if (expirationInterval) clearInterval(expirationInterval);
+    expirationInterval = setInterval(() => {
+        checkAndRenderStatus();
+    }, 1000); 
+}
+
+// Hàm xử lý trung tâm: Kiểm tra quyền + Cập nhật đồng hồ
+function checkAndRenderStatus() {
+    const timerBadge = document.getElementById("trial-timer-badge");
+    const countdownEl = document.getElementById("trial-countdown");
+
+    // 1. Nếu là VIP (Đã trả phí) -> Ẩn huy hiệu
+    if (!isPaidExpired()) {
+        if (timerBadge) timerBadge.style.display = "none";
+        renderUserStatus(); 
+        return;
+    }
+
+    // 2. Nếu chưa trả phí
+    if (isTrialActive()) {
+        // --- CÒN DÙNG THỬ ---
+        if (timerBadge) {
+            timerBadge.style.display = "block";
+            timerBadge.classList.remove("expired");
+            
+            // Tính giờ
+            const regDate = new Date(currentUser.regDate);
+            const trialEndTime = new Date(regDate.getTime() + (24 * 60 * 60 * 1000));
+            const now = new Date();
+            const diffMs = trialEndTime - now;
+
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            // Format số đẹp (01:05:09)
+            const hStr = hours.toString().padStart(2, '0');
+            const mStr = minutes.toString().padStart(2, '0');
+            const sStr = seconds.toString().padStart(2, '0');
+
+            if (countdownEl) {
+                countdownEl.textContent = `${hStr}:${mStr}:${sStr}`;
+            }
+
+            const label = timerBadge.querySelector('.timer-label');
+            const sub = timerBadge.querySelector('.timer-sub');
+            if (label) label.textContent = "⚡ DÙNG THỬ MIỄN PHÍ";
+            if (sub) sub.textContent = "Gia hạn để dùng vĩnh viễn";
+        }
+    } else {
+        // --- HẾT HẠN ---
+        if (timerBadge) {
+            timerBadge.style.display = "block";
+            timerBadge.classList.add("expired"); // Đổi màu đỏ
+            
+            // Sửa nội dung báo hết hạn
+            if (countdownEl) countdownEl.textContent = "00:00:00";
+            
+            const label = timerBadge.querySelector('.timer-label');
+            const sub = timerBadge.querySelector('.timer-sub');
+            if (label) label.textContent = "⛔ ĐÃ HẾT HẠN";
+            if (sub) sub.textContent = "Vui lòng gia hạn ngay";
+        }
+        updateUserUI_Expired();
+    }
+
+    renderUserStatus();
+}
+
 // Hàm cập nhật giao diện khi biết là hết hạn
 function updateUserUI_Expired() {
     const userPill = document.getElementById("user-display");
     if (userPill) {
-        userPill.style.background = "#fee2e2"; // Màu đỏ nhạt
+        userPill.style.background = "#fee2e2"; 
         userPill.style.color = "#b91c1c";
         userPill.style.border = "1px solid #ef4444";
-        // Thêm chữ (Expired)
-        if (!userPill.textContent.includes("(Hết hạn)")) {
-            userPill.textContent += " (Hết hạn)";
+        // Chỉ thêm chữ nếu chưa có
+        if (!userPill.textContent.includes("Hết hạn")) {
+             // Giữ lại tên, chỉ thêm status
+             // userPill.textContent += " (Hết hạn)"; <-- Cách này dễ bị spam text
+             // Nên render lại sạch sẽ:
+             userPill.innerHTML = `👤 ${currentUser.name || currentUser.email} <small>(Hết hạn)</small>`;
         }
     }
 }
@@ -1866,22 +2032,13 @@ function initStatusSelectOptions() {
 
 (async function init() {
     requireLoginOrRedirect();
-
-    // 1. Đồng bộ trạng thái mới nhất từ Sheet (QUAN TRỌNG)
-    // Dùng 'await' để đảm bảo lấy được ngày mới TRƯỚC KHI hiển thị dữ liệu
+    
     await syncAccountStatus(); 
-
-    // 2. Kích hoạt vòng lặp kiểm tra treo máy
+    startRealtimeLoop();
     startExpirationLoop();
 
-    // 3. Nếu vẫn hết hạn (sau khi đã sync) thì báo lỗi
-    if (isExpired()) {
-        showToast("Tài khoản hết hạn. Bạn đang ở chế độ Chỉ Xem.", "error");
-        updateUserUI_Expired(); // Đổi màu đỏ ngay
-    } else {
-        // Nếu còn hạn thì đảm bảo giao diện sạch sẽ
-        updateUserUI_Active();
-    }
+    // Gọi hàm cập nhật UI mới
+    updateUI_InitState();
 
     initStatusSelectOptions();
     await fetchWordsFromSheet();

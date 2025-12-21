@@ -104,6 +104,35 @@ body {
     font-size: 16px;
 }
 
+/* USER STATUS TAGS */
+.status-tag {
+    flex-shrink: 0; /* Không bao giờ bị co lại */
+    font-size: 10px; /* Chữ nhỏ lại xíu cho gọn */
+    border-radius: 12px;
+    padding: 2px 4px;
+    margin-left: 6px;
+}
+/* 1. Đang hoạt động (Xanh lá) */
+.tag-active {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+/* 2. Dùng thử (Vàng cam) */
+.tag-trial {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+/* 3. Hết hạn (Đỏ) */
+.tag-expired {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
 /* goal card */
 .goal-card {
     background: #ecfdf5;
@@ -149,15 +178,38 @@ body {
     margin-bottom: 6px;
 }
 .user-pill {
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: #eef2ff;
-    font-size: 12px;
-    color: #4338ca;
-    max-width: 100%;
+    /* Màu sắc và hình dáng */
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 4px 4px 4px 10px; /* Padding bên phải nhỏ hơn để Tag nằm sát */
+    
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    cursor: pointer;
+
+    /* QUAN TRỌNG: Flexbox để xếp hàng ngang */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px; /* Khoảng cách giữa các phần tử */
+
+    /* Đảm bảo khung không bao giờ vượt quá chiều rộng màn hình */
+    max-width: 100%; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.user-name-text {
+    /* 1. Giới hạn chiều rộng cụ thể cho tên */
+    max-width: 110px; /* Tên chỉ được chiếm tối đa 110px */
+    
+    /* 2. Xử lý cắt chữ */
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    
+    /* Căn chỉnh */
+    display: block; 
 }
 .account-actions {
     display:flex;
@@ -175,6 +227,65 @@ body {
     color:#6b7280;
 }
 
+/* --- ĐỒNG HỒ TRÔI NỔI (GÓC PHẢI) --- */
+.floating-timer-badge {
+    position: fixed; /* Ghim cứng vào màn hình */
+    top: 20px;       /* Cách mép trên 20px */
+    right: 20px;     /* Cách mép phải 20px */
+    z-index: 9999;   /* Luôn nằm trên cùng */
+    
+    background: #ffffff;
+    border: 2px solid #f59e0b; /* Viền vàng cam */
+    border-radius: 12px;
+    padding: 10px 16px;
+    
+    /* Đổ bóng để tạo cảm giác nổi */
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+    
+    text-align: center;
+    min-width: 140px;
+    
+    /* Hiệu ứng xuất hiện */
+    animation: slideInDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes slideInDown {
+    from { transform: translateY(-100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.floating-timer-badge.expired {
+    border-color: #ef4444;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+    background: #fef2f2;
+}
+.floating-timer-badge.expired .timer-label { color: #b91c1c; }
+.floating-timer-badge.expired .timer-value { color: #dc2626; }
+.floating-timer-badge.expired .timer-sub { color: #991b1b; }
+
+/* Nhãn "DÙNG THỬ" */
+.timer-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #d97706;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.timer-sub {
+    font-size: 9px;
+    color: #92400e;
+    margin-top: 2px;
+}
+
+/* Số giờ đếm ngược */
+.timer-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #b45309;
+    font-family: monospace; /* Font kiểu đồng hồ số */
+    line-height: 1.2;
+}
 /* ===============================
    MAIN
 =================================*/
@@ -203,7 +314,22 @@ body {
     align-items:center;
     gap:8px;
 }
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
 
+.header-right-group {
+    display: flex;
+    flex-direction: column; /* Xếp chồng lên nhau */
+    align-items: flex-end;  /* Căn lề phải thẳng tắp */
+    justify-content: center;
+    gap: 4px; /* Khoảng cách nhỏ giữa đồng hồ và user */
+}
 /* buttons */
 .btn-primary {
     border:none;
@@ -943,6 +1069,36 @@ body {
     to { opacity: 1; transform: scale(1); }
 }
 
+/* Đồng hồ đếm ngược dùng thử */
+.trial-timer {
+    font-size: 11px; /* Chữ nhỏ lại cho đỡ chật */
+    font-weight: 700;
+    color: #b45309; 
+    background: #fffbeb; 
+    padding: 2px 8px; /* Padding mỏng lại */
+    border-radius: 6px; /* Bo góc nhẹ */
+    border: 1px solid #fcd34d;
+    white-space: nowrap; /* Không cho xuống dòng */
+    
+    /* Hiệu ứng hiện ra mượt mà */
+    transition: all 0.3s;
+}
+
+/* Hiệu ứng nhấp nháy nhẹ gây chú ý */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Khi hết giờ thì đổi màu đỏ */
+.trial-timer.expired {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #ef4444;
+    animation: none;
+}
+
 /* ===============================
    IRREGULAR VERBS SEARCH (Giao diện tra cứu)
 =================================*/
@@ -1054,5 +1210,22 @@ body {
 @media (max-width: 840px) {
     .app {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Trên điện thoại, tên phải ngắn hơn nữa */
+    .user-name-text {
+        max-width: 70px; /* Chỉ cho phép khoảng 8-10 ký tự */
+    }
+    
+    .user-pill {
+        font-size: 12px;
+        padding-left: 8px;
+    }
+    
+    .status-tag {
+        font-size: 9px;
+        padding: 2px 6px;
     }
 }

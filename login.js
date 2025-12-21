@@ -1,4 +1,4 @@
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwk6dmcLq0dAjeVJmsBrNk4kkpfeMl4LqNNTAZL4Ow1SwAxwMOWVE_zobpzZuxn9zoe/exec";
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzGsNgcSExnTA8XVQZ5iJmu7hvjgNYfGw7IU294sV3a1VkmkuN7gQ3AENgLbb1LtOv1/exec";
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 
@@ -138,7 +138,8 @@ function handleAuthResponse(data) {
             email: data.user.email,
             name: data.user.name || "",
             geminiKey: data.user.geminiKey || "",
-            expiryDate: data.user.expiryDate // Lưu ngày hạn
+            expiryDate: data.user.expiryDate,// Lưu ngày hạn
+            regDate: data.user.regDate
         };
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
 

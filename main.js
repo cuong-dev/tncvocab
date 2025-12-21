@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzTEPhty8799D5Q6LbOTcn10FoUreY2C_kfvOJPCaN2R5pq38DeCOPEsM7mKncsiVFI/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbysQe1fq1llREqJFbXacfMtGmOC-vgEaTBSto9wLsVUzVtg7EDw-T2NMoK0fvXuRrsY/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -653,13 +653,17 @@ function renderWords(filterText = "") {
         editBtn.type = "button";
         editBtn.textContent = "Sửa";
         editBtn.className = "mini-btn edit";
-        editBtn.addEventListener("click", () => setEditMode(index));
+        editBtn.addEventListener("click", ()  => {
+            if (!checkAccess()) return; // <--- Chặn
+                setEditMode(index);
+        });
 
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.textContent = "Xóa";
         delBtn.className = "mini-btn delete";
         delBtn.addEventListener("click", async () => {
+            if (!checkAccess()) return;
              if (!confirm(`Xóa từ "${w.word}"?`)) return;
              try {
                 const data = await sendWordToGoogleSheet_Delete(index);
@@ -790,7 +794,7 @@ function closeAiModal() {
 if (wordForm) {
     wordForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-
+        if (!checkAccess()) return;
         const word     = (wordInput.value || "").trim();
         const meaning  = (meaningInput.value || "").trim();
         const folder   = (folderInput.value || "").trim();
@@ -849,6 +853,7 @@ if (cancelEditButton) {
 
 if (reloadButton) {
     reloadButton.addEventListener("click", async () => {
+        if (!checkAccess()) return;
         await fetchWordsFromSheet();
         renderWords(searchInput.value);
         updateCount();
@@ -1027,6 +1032,7 @@ if (geminiForm) {
 // AI button
 if (aiButton) {
     aiButton.addEventListener("click", async () => {
+        if (!checkAccess()) return;
         const word = (wordInput.value || "").trim();
         if (!word) {
             alert("Hãy nhập Word trước khi dùng AI gợi ý.");
@@ -1080,53 +1086,88 @@ let pendingMode = "";      // Lưu tạm chế độ đang chọn (flashcard/fil
 
 // 1. Điều hướng Tab
 function showSection(sectionId) {
-    const vocabSection  = document.querySelector('section.card:nth-of-type(1)');
-    const listSection   = document.querySelector('section.card:nth-of-type(2)');
+    
+    const vocabSection = document.querySelector('section.card:nth-of-type(1)'); 
+    const listSection  = document.querySelector('section.card:nth-of-type(2)');
     const reviewSection = document.getElementById('review-section');
+    const irregularSection = document.getElementById('irregular-section'); // <--- MỚI
 
-    const navVocab  = document.querySelector('.nav-button[onclick="showSection(\'vocab\')"]');
-    const navReview = document.querySelector('.nav-button[onclick="showSection(\'review\')"]');
+    // Reset nút active
+    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
 
-    if (sectionId === 'review') {
-        if (vocabSection) vocabSection.style.display = 'none';
-        if (listSection) listSection.style.display = 'none';
-        if (reviewSection) reviewSection.style.display = 'block';
-        
-        if (navVocab) navVocab.classList.remove('active');
-        if (navReview) navReview.classList.add('active');
-        
-        backToReviewMenu(); // Luôn về menu chính khi bấm tab
-    } else {
+    // Ẩn tất cả
+    if (vocabSection) vocabSection.style.display = 'none';
+    if (listSection) listSection.style.display = 'none';
+    if (reviewSection) reviewSection.style.display = 'none';
+    if (irregularSection) irregularSection.style.display = 'none';
+
+    // Hiện tab được chọn
+    if (sectionId === 'vocab') {
         if (vocabSection) vocabSection.style.display = 'block';
         if (listSection) listSection.style.display = 'block';
-        if (reviewSection) reviewSection.style.display = 'none';
-
-        if (navVocab) navVocab.classList.add('active');
-        if (navReview) navReview.classList.remove('active');
+        document.querySelector('button[onclick="showSection(\'vocab\')"]').classList.add('active');
+    } 
+    else if (sectionId === 'review') {
+        if (reviewSection) reviewSection.style.display = 'block';
+        document.querySelector('button[onclick="showSection(\'review\')"]').classList.add('active');
+        backToReviewMenu();
+    }
+    else if (sectionId === 'irregular') {
+       if (irregularSection) irregularSection.style.display = 'block';
+        document.querySelector('button[onclick="showSection(\'irregular\')"]').classList.add('active');
+        
+        // MỚI: Tự động tải dữ liệu từ Sheet khi bấm vào tab này lần đầu
+        fetchIrregularVerbsFromSheet(); 
+        
+        // Focus vào ô tìm kiếm cho tiện
+        setTimeout(() => document.getElementById("irregular-search-input").focus(), 300);
     }
 }
 
 // 2. Navigation trong Review
-function backToReviewMenu() {
-    document.getElementById('review-menu').style.display = 'block';
-    document.getElementById('review-folder-selection').style.display = 'none';
-    document.getElementById('mode-flashcard').style.display = 'none';
-    document.getElementById('mode-fill').style.display = 'none';
+function backToReviewFolder() {
+    // Ẩn 3 game
+    const flashcardEl = document.getElementById('mode-flashcard');
+    const fillEl      = document.getElementById('mode-fill');
+    const scrambleEl  = document.getElementById('mode-scramble'); // <-- Bổ sung cái này
+
+    if (flashcardEl) flashcardEl.style.display = 'none';
+    if (fillEl)      fillEl.style.display = 'none';
+    if (scrambleEl)  scrambleEl.style.display = 'none';
+
+    // Hiện lại màn chọn folder
+    document.getElementById('review-folder-selection').style.display = 'block';
 }
 
-function backToReviewFolder() {
-    // Từ game quay lại màn chọn folder
-    document.getElementById('mode-flashcard').style.display = 'none';
-    document.getElementById('mode-fill').style.display = 'none';
-    document.getElementById('review-folder-selection').style.display = 'block';
+// Quay lại Menu chính của phần Ôn tập
+function backToReviewMenu() {
+    const menuEl      = document.getElementById('review-menu');
+    const folderSelEl = document.getElementById('review-folder-selection');
+    
+    // Ẩn hết game + màn chọn folder
+    const flashcardEl = document.getElementById('mode-flashcard');
+    const fillEl      = document.getElementById('mode-fill');
+    const scrambleEl  = document.getElementById('mode-scramble'); // <-- Bổ sung
+
+    if (folderSelEl) folderSelEl.style.display = 'none';
+    if (flashcardEl) flashcardEl.style.display = 'none';
+    if (fillEl)      fillEl.style.display = 'none';
+    if (scrambleEl)  scrambleEl.style.display = 'none';
+
+    // Hiện menu
+    if (menuEl) menuEl.style.display = 'block';
 }
 
 // 3. Bước 1: Chọn Game -> Hiện màn hình chọn Folder
 function startReviewSetup(mode) {
+    
+     if (!checkAccess()) return; // <--- Bấm vào tab Ôn tập là hiện Popup đòi tiền
+    
     if (words.length === 0) {
         alert("Chưa có từ vựng nào để ôn tập!");
         return;
     }
+    
 
     pendingMode = mode; 
 
@@ -1214,6 +1255,10 @@ function confirmStartGame() {
         document.getElementById('mode-fill').style.display = 'block';
         renderFillQuestion();
     }
+    else if (pendingMode === 'scramble') {
+        document.getElementById('mode-scramble').style.display = 'block';
+        renderScrambleGame();
+    }
 }
 // 5. Logic Game: Flashcard
 function renderFlashcard() {
@@ -1241,8 +1286,8 @@ function nextFlashcard() {
         currentReviewIdx++;
         renderFlashcard();
     } else {
-        alert("Chúc mừng! Bạn đã ôn hết danh sách.");
-        backToReviewFolder();
+        // THAY ALERT CŨ BẰNG HÀM MỚI
+        showCelebration(); 
     }
 }
 
@@ -1295,8 +1340,8 @@ function nextFillQuestion() {
         currentReviewIdx++;
         renderFillQuestion();
     } else {
-        alert("Chúc mừng! Bạn đã hoàn thành bài ôn tập.");
-        backToReviewFolder();
+        // THAY ALERT CŨ BẰNG HÀM MỚI
+        showCelebration();
     }
 }
 
@@ -1307,6 +1352,399 @@ if (fillEl) {
         if (event.key === "Enter") {
             checkFillAnswer();
         }
+    });
+}
+
+// ==========================================
+// SCRAMBLE GAME LOGIC (SẮP XẾP CHỮ)
+// ==========================================
+let scrambleCurrentAnswer = []; // Mảng lưu các ký tự người dùng đã xếp
+let scrambleOriginChars = [];   // Mảng lưu ký tự gốc (đã xáo trộn) để render Pool
+
+function renderScrambleGame() {
+    const w = reviewList[currentReviewIdx];
+    document.getElementById('scramble-meaning').textContent = w.meaning;
+
+    const feedback = document.getElementById('scramble-feedback');
+    feedback.textContent = "";
+    feedback.className = "feedback-msg";
+    document.getElementById('scramble-answer-zone').className = "scramble-slots";
+
+    // 1. Chuẩn bị từ vựng: Xóa khoảng trắng, đưa về chữ hoa
+    const cleanWord = w.word.replace(/\s+/g, '').toUpperCase();
+    
+    // 2. Tạo mảng ký tự và xáo trộn
+    // Mẹo: map về object có id để phân biệt các chữ cái giống nhau (vd: 2 chữ P trong APPLE)
+    scrambleOriginChars = cleanWord.split('').map((char, index) => ({
+        id: index,
+        char: char
+    }));
+    
+    // Xáo trộn (Shuffle)
+    scrambleOriginChars.sort(() => Math.random() - 0.5);
+
+    scrambleCurrentAnswer = []; // Reset câu trả lời
+    renderScrambleUI();
+}
+
+function renderScrambleUI() {
+    const poolEl = document.getElementById('scramble-pool');
+    const answerEl = document.getElementById('scramble-answer-zone');
+    
+    poolEl.innerHTML = "";
+    answerEl.innerHTML = "";
+
+    // Render Pool (Các chữ cái bên dưới)
+    scrambleOriginChars.forEach(item => {
+        const btn = document.createElement("div");
+        btn.className = "letter-tile";
+        btn.textContent = item.char;
+        
+        // Kiểm tra xem ký tự này đã được chọn lên trên chưa
+        const isSelected = scrambleCurrentAnswer.find(a => a.id === item.id);
+        if (isSelected) {
+            btn.classList.add("used"); // Ẩn đi nếu đã chọn
+        } else {
+            // Sự kiện: Bấm vào Pool -> Bay lên Answer
+            btn.onclick = () => {
+                scrambleCurrentAnswer.push(item);
+                renderScrambleUI(); // Vẽ lại
+            };
+        }
+        poolEl.appendChild(btn);
+    });
+
+    // Render Answer Zone (Các chữ cái đã chọn)
+    scrambleCurrentAnswer.forEach((item, index) => {
+        const btn = document.createElement("div");
+        btn.className = "letter-tile";
+        btn.textContent = item.char;
+        
+        // Sự kiện: Bấm vào Answer -> Trả về Pool
+        btn.onclick = () => {
+            scrambleCurrentAnswer.splice(index, 1); // Xóa khỏi answer
+            renderScrambleUI(); // Vẽ lại
+        };
+        answerEl.appendChild(btn);
+    });
+}
+
+function resetScramble() {
+    scrambleCurrentAnswer = [];
+    renderScrambleUI();
+    document.getElementById('scramble-feedback').textContent = "";
+    document.getElementById('scramble-answer-zone').className = "scramble-slots";
+}
+
+function checkScrambleAnswer() {
+    const w = reviewList[currentReviewIdx];
+    const cleanWord = w.word.replace(/\s+/g, '').toUpperCase();
+    
+    // Ghép các ký tự user chọn thành chuỗi
+    const userAnswer = scrambleCurrentAnswer.map(i => i.char).join('');
+    const feedback = document.getElementById('scramble-feedback');
+    const zone = document.getElementById('scramble-answer-zone');
+
+    if (userAnswer === cleanWord) {
+        feedback.textContent = "🎉 Chính xác! " + w.word;
+        feedback.className = "feedback-msg correct";
+        zone.classList.add("correct");
+        playPronunciation(w.word);
+    } else {
+        feedback.textContent = "Sai rồi, thử lại nhé!";
+        feedback.className = "feedback-msg wrong";
+        zone.classList.add("wrong");
+        // Hiệu ứng rung nhẹ nếu muốn (optional)
+        setTimeout(() => zone.classList.remove("wrong"), 500);
+    }
+}
+
+function nextScrambleQuestion() {
+    if (currentReviewIdx < reviewList.length - 1) {
+        currentReviewIdx++;
+        renderScrambleGame();
+    } else {
+        showCelebration(); // Gọi hiệu ứng pháo giấy chiến thắng
+    }
+}
+
+function isExpired() {
+    if (!currentUser) return true;
+    const expiryStr = currentUser.expiryDate;
+    
+    // Nếu không có ngày hạn => Coi như hết hạn
+    if (!expiryStr) return true;
+
+    const expiryDate = new Date(expiryStr);
+    const now = new Date();
+    expiryDate.setHours(23, 59, 59, 999); 
+    
+    return now > expiryDate;
+}
+
+// Hàm hiển thị Popup bán hàng
+function showPremiumPopup() {
+    const modal = document.getElementById("premium-modal");
+    if (modal) modal.style.display = "flex";
+}
+
+// Hàm đóng Popup
+function closePremiumPopup() {
+    const modal = document.getElementById("premium-modal");
+    if (modal) modal.style.display = "none";
+}
+
+// Hàm Wrapper: Kiểm tra quyền trước khi thực hiện hành động
+function checkAccess() {
+    if (isExpired()) {
+        showPremiumPopup();
+        return false; // Chặn lại
+    }
+    return true; // Cho qua
+}
+
+// Hàm phụ trợ logout nhanh
+function forceLogout(msg) {
+    alert(msg);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+    window.location.href = "login.html";
+}
+
+// ==========================================
+// HIỆU ỨNG CHIẾN THẮNG (CONFETTI)
+// ==========================================
+
+function showCelebration() {
+    // 1. Phát nhạc (nếu trình duyệt cho phép) - Tuỳ chọn
+    // const audio = new Audio('path/to/success.mp3'); audio.play().catch(()=>{});
+
+    // 2. Hiện Modal
+    const modal = document.getElementById("celebration-modal");
+    const countEl = document.getElementById("celebration-count");
+    
+    if (countEl) countEl.textContent = reviewList.length;
+    
+    if (modal) {
+        modal.style.display = "flex";
+        modal.classList.add("show");
+    }
+
+    // 3. Bắn pháo giấy
+    fireConfetti();
+}
+
+function closeCelebration() {
+    const modal = document.getElementById("celebration-modal");
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("show");
+    }
+    // Quay về menu chọn folder
+    backToReviewFolder();
+}
+
+// --- Logic vẽ Confetti (Gọn nhẹ, không cần thư viện ngoài) ---
+function fireConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    if (!canvas) return;
+    
+    canvas.style.display = "block";
+    const ctx = canvas.getContext("2d");
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    const mp = 150; // Số lượng hạt
+    const particles = [];
+    for (let i = 0; i < mp; i++) {
+        particles.push({
+            x: Math.random() * W,
+            y: Math.random() * H - H,
+            r: Math.random() * 12 + 4, // Bán kính
+            d: Math.random() * mp,     // Mật độ
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+            tilt: Math.floor(Math.random() * 10) - 10,
+            tiltAngle: 0,
+            tiltAngleIncremental: Math.random() * 0.07 + 0.05
+        });
+    }
+
+    let angle = 0;
+    let animationId;
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        particles.forEach((p, i) => {
+            angle += 0.01;
+            p.tiltAngle += p.tiltAngleIncremental;
+            p.y += (Math.cos(angle + p.d) + 3 + p.r / 2) / 2;
+            p.x += Math.sin(angle);
+            p.tilt = Math.sin(p.tiltAngle) * 15;
+
+            ctx.beginPath();
+            ctx.lineWidth = p.r / 2;
+            ctx.strokeStyle = p.color;
+            ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
+            ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+            ctx.stroke();
+
+            // Nếu hạt rơi hết -> reset lại lên trên (tạo hiệu ứng mưa)
+            // Hoặc muốn dừng thì check condition
+            if (p.y > H) {
+                 // Để tạo hiệu ứng "nổ" 1 lần rồi thôi, ta cho nó rơi ra khỏi màn hình rồi ẩn
+                 // Nếu muốn lặp lại vô tận thì uncomment dòng dưới:
+                 // p.x = Math.random() * W; p.y = -10;
+                 particles.splice(i, 1);
+            }
+        });
+
+        if (particles.length > 0) {
+            animationId = requestAnimationFrame(draw);
+        } else {
+            canvas.style.display = "none";
+            cancelAnimationFrame(animationId);
+        }
+    }
+    
+    draw();
+}
+
+// ==========================================
+// IRREGULAR VERBS LOGIC (FROM SHEET)
+// ==========================================
+
+let cachedIrregularData = []; // Biến lưu data tải từ Sheet
+let isIrregularLoaded = false; // Cờ đánh dấu đã tải chưa
+
+// Hàm hiển thị Toast Loading (Góc trái)
+function showLoadingToast(show, text = "Đang xử lý...") {
+    const toast = document.getElementById("toast-loading");
+    const textEl = document.getElementById("toast-loading-text");
+    
+    if (!toast) return;
+
+    if (show) {
+        if (textEl) textEl.textContent = text;
+        toast.style.display = "flex"; // Đảm bảo flex để căn chỉnh
+        // Cho một chút delay để transition hoạt động
+        setTimeout(() => toast.classList.add("show"), 10);
+    } else {
+        toast.classList.remove("show");
+        // Đợi transition xong mới ẩn hẳn
+        setTimeout(() => {
+            if (!toast.classList.contains("show")) {
+                toast.style.display = "none";
+            }
+        }, 300);
+    }
+}
+// CẬP NHẬT HÀM FETCH BQT
+async function fetchIrregularVerbsFromSheet() {
+    if (isIrregularLoaded) return; 
+
+    // HIỆN TOAST LOADING
+    showLoadingToast(true, "Đang tải 360 động từ BQT...");
+
+    try {
+        const res = await fetch(LOGIN_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "getIrregularVerbs" })
+        });
+        
+        const data = await res.json();
+        
+        if (data.status === "success" && Array.isArray(data.data)) {
+            cachedIrregularData = data.data;
+            isIrregularLoaded = true;
+            
+            // Tải xong -> Đổi text thành "Hoàn tất" rồi ẩn sau 1.5s
+            const textEl = document.getElementById("toast-loading-text");
+            const spinner = document.querySelector("#toast-loading .mini-spinner");
+            
+            if (textEl) textEl.textContent = "Đã tải xong dữ liệu!";
+            if (spinner) spinner.style.borderTopColor = "#10b981"; // Đổi màu xanh lá
+            
+            setTimeout(() => showLoadingToast(false), 1500);
+            
+        } else {
+            console.warn("Không lấy được dữ liệu BQT");
+            showLoadingToast(false);
+        }
+    } catch (err) {
+        console.error("Lỗi fetch BQT:", err);
+        showLoadingToast(false);
+    }
+}
+
+// Hàm thực hiện tìm kiếm và Render
+function triggerSearchIrregular() {
+    const input = document.getElementById("irregular-search-input");
+    const container = document.getElementById("irregular-result-container");
+    const placeholder = document.getElementById("irregular-placeholder");
+    
+    const keyword = (input.value || "").trim().toLowerCase();
+
+    // Reset giao diện
+    container.innerHTML = "";
+    container.style.display = "none";
+    placeholder.style.display = "block";
+
+    if (!keyword) return;
+
+    // Lọc dữ liệu
+    // Tìm chính xác hoặc gần đúng
+    const results = cachedIrregularData.filter(item => {
+        return (item.v1 || "").toLowerCase() === keyword ||
+               (item.v2 || "").toLowerCase() === keyword ||
+               (item.v3 || "").toLowerCase() === keyword ||
+               (item.mean || "").toLowerCase().includes(keyword); // Nghĩa thì tìm gần đúng
+    });
+
+    if (results.length > 0) {
+        placeholder.style.display = "none";
+        container.style.display = "block";
+        
+        // Render từng kết quả tìm được
+        results.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "verb-detail-card";
+            
+            card.innerHTML = `
+                <div class="verb-meaning">${item.mean}</div>
+                <div class="verb-forms-row">
+                    <div class="verb-col">
+                        <span class="verb-label">Nguyên thể (V1)</span>
+                        <div class="verb-word v1-style">${item.v1}</div>
+                    </div>
+                    <div class="verb-col">
+                        <span class="verb-label">Quá khứ (V2)</span>
+                        <div class="verb-word v2-style">${item.v2}</div>
+                    </div>
+                    <div class="verb-col">
+                        <span class="verb-label">Phân từ II (V3)</span>
+                        <div class="verb-word v3-style">${item.v3}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } else {
+        // Không tìm thấy
+        placeholder.style.display = "block";
+        placeholder.innerHTML = `<div style="font-size:30px">🤷‍♂️</div><div>Không tìm thấy từ "<b>${input.value}</b>" trong dữ liệu.</div>`;
+    }
+}
+
+// Lắng nghe sự kiện gõ phím (Realtime search hoặc Enter)
+const irrInput = document.getElementById("irregular-search-input");
+if (irrInput) {
+    irrInput.addEventListener("keyup", (e) => {
+        // Tự động tìm sau khi gõ (hoặc check e.key === 'Enter' nếu muốn phải Enter mới tìm)
+        triggerSearchIrregular();
     });
 }
 // ===== INIT =====
@@ -1324,9 +1762,15 @@ function initStatusSelectOptions() {
 
 (async function init() {
     requireLoginOrRedirect();
+
+    // Nếu hết hạn, có thể hiện 1 cái Toast nhắc nhở nhẹ (Optional)
+    if (isExpired()) {
+        showToast("Tài khoản hết hạn. Bạn đang ở chế độ Xem.", "error");
+    }
+
     initStatusSelectOptions();
     await fetchWordsFromSheet();
-    renderWords();          // activeFolder = null => chỉ hiện hướng dẫn
+    renderWords(); // Vẫn load danh sách từ cho họ xem (nhưng không sửa/xóa được)
     updateCount();
     updateStreak();
     updateFolderSuggestions();

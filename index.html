@@ -13,10 +13,10 @@
         <aside class="sidebar">
             <div>
                 <div class="logo-block">
-                    <div class="logo-icon">En</div>
+                    <div class="logo-icon">TNC</div>
                     <div>
-                        <div class="logo-text-main">English Vocab Lab</div>
-                        <div class="logo-text-sub">Sổ tay từ vựng pastel của riêng bạn</div>
+                        <div class="logo-text-main">TNC English</div>
+                        <div class="logo-text-sub">Sổ tay từ vựng của riêng bạn</div>
                     </div>
                 </div>
 
@@ -31,6 +31,9 @@
                 </button>
                 <button class="nav-button" onclick="showSection('review')">
                 🧠 Ôn tập
+                </button>
+                <button class="nav-button" onclick="showSection('irregular')">
+                🔥 Động từ BQT
                 </button>
                 </div>
 
@@ -67,7 +70,7 @@
                 <div>
                     <div class="main-title">Sổ tay từ vựng</div>
                     <div class="main-sub">
-                        Thêm – lưu – ôn lại từ vựng tiếng Anh, dữ liệu lưu trên Google Sheets.
+                        Thêm – lưu – ôn lại từ vựng tiếng Anh.
                     </div>
                 </div>
                 <div class="main-header-right">
@@ -75,7 +78,7 @@
                         <span class="pill-dot"></span>
                         <span>0 từ</span>
                     </div>
-                    <button class="btn-ghost" id="reload-button">🔄 Tải lại từ Sheets</button>
+                    <button class="btn-ghost" id="reload-button">🔄 Tải lại danh sách</button>
                 </div>
             </header>
 
@@ -85,10 +88,10 @@
                     <div>
                         <div class="card-title">Thêm từ mới</div>
                         <p class="card-description">
-                            Điền đầy đủ thông tin hoặc dùng 🤖 AI để gợi ý. Date Added sẽ được tạo trên Google Sheets.
+                            Điền đầy đủ thông tin hoặc dùng 🤖 AI để gợi ý
                         </p>
                     </div>
-                    <span class="badge">Nguồn dữ liệu chính: Google Sheets</span>
+                    <span class="badge">Nguồn dữ liệu chính: Gemini</span>
                 </div>
 
                 <form id="word-form">
@@ -139,7 +142,7 @@
                     </div>
 
                     <button class="btn-primary" type="submit" id="word-submit-button">
-                        + Thêm vào Google Sheets
+                        + Thêm vào Danh sách
                     </button>
                     <button class="btn-ghost" type="button" id="cancel-edit-button" style="display:none;">
                         Hủy sửa
@@ -156,7 +159,7 @@
                     <div>
                         <div class="card-title">Danh sách từ vựng</div>
                         <p class="card-description">
-                            Dữ liệu được load từ Google Sheets. Có thể tìm kiếm, nghe phát âm, sửa / xóa.
+                            Dữ liệu được load từ Danh sách. Có thể tìm kiếm, nghe phát âm, sửa / xóa.
                         </p>
                     </div>
                     <div>
@@ -179,7 +182,7 @@
                     </div>
                     <div class="word-empty" id="word-empty">
                         Chưa có từ nào hoặc chưa load được dữ liệu.
-                        Hãy bấm "Tải lại từ Sheets" hoặc thêm từ mới.
+                        Hãy bấm "Tải lại" hoặc thêm từ mới.
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
@@ -207,6 +210,34 @@
                             <h3>Điền từ</h3>
                             <p>Nhìn nghĩa, gõ từ tiếng Anh.</p>
                         </div>
+                    </div>
+                    <div class="review-option-card" onclick="startReviewSetup('scramble')">
+                        <div class="review-icon">🧩</div>
+                        <div class="review-info">
+                            <h3>Sắp xếp chữ</h3>
+                            <p>Ghép các ký tự lộn xộn.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="mode-scramble" style="display:none;">
+                <button class="btn-ghost" onclick="backToReviewFolder()">← Chọn lại chủ đề</button>
+                <div class="scramble-container">
+                    <div class="question-box">
+                        <div class="q-label">Nghĩa tiếng Việt:</div>
+                        <div id="scramble-meaning" class="q-text">...</div>
+                    </div>
+
+                    <div id="scramble-answer-zone" class="scramble-slots"></div>
+
+                    <div id="scramble-pool" class="scramble-pool"></div>
+
+                    <div id="scramble-feedback" class="feedback-msg"></div>
+
+                    <div class="review-controls" style="justify-content: center; margin-top:20px; gap:10px;">
+                        <button class="btn-ghost" onclick="resetScramble()">Xếp lại</button>
+                        <button class="btn-primary" onclick="checkScrambleAnswer()">Kiểm tra</button>
+                        <button class="btn-ghost" onclick="nextScrambleQuestion()">Câu tiếp →</button>
                     </div>
                 </div>
             </div>
@@ -271,6 +302,27 @@
 
         </section>
 
+        <section id="irregular-section" class="card" style="display:none; min-height: 400px;">
+            
+            <div class="irregular-search-box">
+                <div class="search-title">Tra cứu Động từ BQT</div>
+                <div class="search-sub">Nhập động từ (V1, V2, V3) hoặc nghĩa tiếng Việt</div>
+                
+                <div class="search-input-wrapper">
+                    <input id="irregular-search-input" type="text" placeholder="Gõ từ cần tra (vd: go, went, ăn...)" autocomplete="off" />
+                    <button class="btn-primary search-btn" onclick="triggerSearchIrregular()">🔍</button>
+                </div>
+                
+            </div>
+
+            <div id="irregular-result-container" class="irregular-result-area" style="display:none;">
+                </div>
+
+            <div id="irregular-placeholder" style="text-align:center; margin-top:40px; color:#9ca3af;">
+                <div style="font-size:40px; margin-bottom:10px;">📖</div>
+                <div>Kết quả tra cứu sẽ hiện tại đây</div>
+            </div>
+        </section>
         </main>
     </div>
 </div>
@@ -326,7 +378,7 @@
     <div class="modal-card">
         <div class="modal-title">Thiết lập Gemini API key</div>
         <p class="modal-sub">
-            Dán Gemini API key đã được cấp. Hệ thống sẽ kiểm tra trùng với <b>cột C</b> trong sheet <b>Users</b>.
+            Dán Gemini API key đã được cấp. Hệ thống sẽ kiểm tra <b>Users</b>.
         </p>
 
         <form id="gemini-key-form" class="modal-form">
@@ -345,8 +397,83 @@
     </div>
 </div>
 
+
+
 <!-- Toast -->
 <div id="toast"></div>
+<div id="toast-loading">
+    <div class="mini-spinner"></div>
+    <span id="toast-loading-text">Đang tải dữ liệu...</span>
+</div>
+
+<div id="premium-modal" class="modal-backdrop" style="display:none; z-index: 999999;">
+    <div class="modal-card" style="width: 380px; border-top: 4px solid #ef4444; position:relative;">
+
+        <button onclick="closePremiumPopup()" style="position:absolute; top:10px; right:10px; border:none; background:none; font-size:20px; cursor:pointer; color:#9ca3af;">✕</button>
+        <div style="text-align:center;">
+            <div style="font-size: 48px; margin-bottom: 4px;">⌛</div>
+            <div class="modal-title" style="color:#b91c1c;">Tài khoản hết hạn</div>
+            <p class="modal-sub">
+                Hạn sử dụng: <b id="session-expired-date" style="color:#b91c1c;">...</b>
+            </p>
+        </div>
+        
+        <div class="payment-box">
+            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:4px;">Gia hạn ngay để tiếp tục học</div>
+            <span class="price-tag">35.000đ <small style="font-size:14px; font-weight:500; color:#64748b;">/ tháng</small></span>
+            
+            <div class="bank-info">
+                <div class="bank-row">
+                    <span class="bank-label">Ngân hàng:</span>
+                    <span class="bank-value">TPBank</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Chủ TK:</span>
+                    <span class="bank-value">TRAN NGOC CUONG</span>
+                </div>
+                <div class="bank-row" style="border:none;">
+                    <span class="bank-label">Số TK:</span>
+                    <span class="bank-value" style="color:#0f172a; font-size:15px;">04312089999</span>
+                </div>
+            </div>
+
+            <div style="margin-top:12px; font-size:11px; text-align:center; color:#64748b;">Nội dung CK:</div>
+            <div class="transfer-syntax">VOCAB [EMAIL_CUA_BAN]</div>
+            <div class="legal-note">
+                ⚠️ <b>Lưu ý:</b> Đây là trang web học tập cá nhân. Khoản phí trên chỉ được sử dụng để chi trả chi phí máy chủ, API AI và bảo dưỡng hệ thống kỹ thuật. Chúng tôi không kinh doanh vì lợi nhuận và cam kết tuân thủ đúng quy định pháp luật hiện hành.
+            </div>
+        </div>
+
+        <div class="contact-admin" style="text-align:center;">
+             Liên hệ Admin qua Zalo: <b>0946415092</b> để kích hoạt lại.
+        </div>
+
+        <button id="force-logout-btn" class="btn-primary" style="width:100%; margin-top:16px; background:#dc2626;">
+            Đăng xuất để kích hoạt
+        </button>
+    </div>
+</div>
+<!-- confetti-->
+<canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999999; display:none;"></canvas>
+
+<div id="celebration-modal" class="modal-backdrop" style="display:none; z-index:99999;">
+    <div class="modal-card" style="text-align:center; border-top: 5px solid #f59e0b; width: 360px;">
+        <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 1s infinite;">🏆</div>
+        <div class="modal-title" style="color:#d97706; font-size:24px;">Xuất sắc!</div>
+        
+        <p class="modal-sub" style="font-size:15px; margin: 10px 0; color: #4b5563;">
+            Bạn đã ôn tập xong <b id="celebration-count" style="color:#d97706;">0</b> từ vựng.
+        </p>
+        
+        <div style="background:#fffbeb; padding:12px; border-radius:12px; font-size:14px; color:#92400e; margin-bottom:20px;">
+            "Học tập là hạt giống của kiến thức, kiến thức là hạt giống của hạnh phúc." 🌱
+        </div>
+
+        <button class="btn-primary" onclick="closeCelebration()" style="width:100%; background: linear-gradient(to right, #f59e0b, #d97706); border:none;">
+            Tuyệt vời, quay lại!
+        </button>
+    </div>
+</div>
 
 <script src="main.js"></script>
 </body>

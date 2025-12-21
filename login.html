@@ -13,7 +13,7 @@
             <div class="logo-icon">En</div>
             <div>
                 <div class="logo-text-main">English Vocab Lab</div>
-                <div class="logo-text-sub">Đăng nhập để tiếp tục</div>
+                <div class="logo-text-sub" id="page-subtitle">Đăng nhập để tiếp tục</div>
             </div>
         </div>
 
@@ -24,15 +24,88 @@
             <label for="login-password">Mật khẩu</label>
             <input type="password" id="login-password" required />
 
-            <button type="submit" class="btn-primary" style="width:100%;margin-top:8px;">
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:8px;">
                 Đăng nhập
             </button>
 
-            <div id="login-message" class="login-message"></div>
+            <div class="auth-switch">
+                Chưa có tài khoản? <a href="#" id="go-to-register">Đăng ký ngay</a>
+            </div>
         </form>
+
+        <form id="register-form" class="login-form" style="display:none;">
+            <label for="reg-name">Tên hiển thị</label>
+            <input type="text" id="reg-name" placeholder="Vd: Minh" required />
+
+            <label for="reg-email">Email</label>
+            <input type="email" id="reg-email" placeholder="your@gmail.com" required />
+
+            <label for="reg-password">Mật khẩu</label>
+            <input type="password" id="reg-password" placeholder="Tối thiểu 6 ký tự" required />
+
+            <label for="reg-confirm">Nhập lại mật khẩu</label>
+            <input type="password" id="reg-confirm" required />
+
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:8px;">
+                Đăng ký tài khoản
+            </button>
+
+            <div class="auth-switch">
+                Đã có tài khoản? <a href="#" id="go-to-login">Đăng nhập</a>
+            </div>
+        </form>
+
+        <div id="login-message" class="login-message"></div>
     </div>
 </div>
+<div id="expired-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card" style="width: 380px; border-top: 4px solid #ef4444;">
+        <div style="text-align:center;">
+            <div style="font-size: 42px; margin-bottom: 4px;">💎</div>
+            <div class="modal-title" style="color:#b91c1c; font-size:18px;">Kích hoạt tài khoản</div>
+            <p id="expired-message" class="modal-sub" style="margin-bottom:10px;">
+                Tài khoản của bạn chưa được kích hoạt hoặc đã hết hạn.
+            </p>
+        </div>
 
+        <div class="payment-box">
+            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:4px;">Phí gia hạn / Kích hoạt</div>
+            <span class="price-tag">35.000đ <small style="font-size:14px; font-weight:500; color:#64748b;">/ tháng</small></span>
+            
+            <div class="bank-info">
+                <div class="bank-row">
+                    <span class="bank-label">Ngân hàng:</span>
+                    <span class="bank-value">TPBANK</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Chủ TK:</span>
+                    <span class="bank-value">TRAN NGOC CUONG</span>
+                </div>
+                <div class="bank-row" style="border:none;">
+                    <span class="bank-label">Số TK:</span>
+                    <span class="bank-value" style="color:#0f172a; font-size:15px;">04312089999</span>
+                </div>
+            </div>
+
+            <div style="margin-top:12px; font-size:11px; text-align:center; color:#64748b;">Nội dung chuyển khoản (Bắt buộc):</div>
+            <div class="transfer-syntax">VOCAB [EMAIL_CUA_BAN]</div>
+            <div class="legal-note">
+                ⚠️ <b>Lưu ý:</b> Đây là trang web học tập cá nhân. Khoản phí trên chỉ được sử dụng để chi trả chi phí máy chủ, API AI và bảo dưỡng hệ thống kỹ thuật. Chúng tôi không kinh doanh vì lợi nhuận và cam kết tuân thủ đúng quy định pháp luật hiện hành.
+            </div>
+        </div>
+
+        <div class="contact-admin" style="text-align:center;">
+            Sau khi chuyển khoản, vui lòng chụp ảnh màn hình và gửi Zalo: <b>0946415092</b> để được duyệt nhanh.
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:10px;">
+            <button class="btn-ghost" onclick="window.location.reload()" style="flex:1;">Quay lại</button>
+            <button class="btn-primary" onclick="window.location.href='https://zalo.me/g/vggdoi022'" style="flex:1; background:#0088FF;">
+                💬 Chat Admin
+            </button>
+        </div>
+    </div>
+</div>
 <script src="login.js"></script>
 </body>
 </html>

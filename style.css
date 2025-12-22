@@ -1462,7 +1462,7 @@ body {
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px) { 
     /* Trên điện thoại, tên phải ngắn hơn nữa */
     .user-name-text {
         max-width: 70px; /* Chỉ cho phép khoảng 8-10 ký tự */

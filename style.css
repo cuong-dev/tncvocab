@@ -440,12 +440,13 @@ body {
     margin-top:8px;
 }
 .word-row {
-    display:grid;
-    grid-template-columns: 1.0fr 0.8fr 1.1fr 1.6fr 0.6fr 0.7fr 0.7fr 0.7fr;
-    gap:6px;
-    padding:4px 0;
-    font-size:12px;
-    align-items:center;
+    display: grid;
+    /* Cấu trúc mới: Word | IPA | Meaning | Sentence | Type | Folder | Actions */
+    grid-template-columns: 1.1fr 0.8fr 1.2fr 1.8fr 0.6fr 0.8fr 0.7fr;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 12px;
+    align-items: center;
 }
 .word-header {
     font-weight:600;
@@ -576,21 +577,52 @@ body {
    LOGIN PAGE
 =================================*/
 .login-body {
-    background:#eef2ff;
+    background: #eef2ff;
+    /* Đảm bảo body đủ cao để chứa nội dung */
+    min-height: 100vh; 
 }
 .login-wrapper {
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    /* Cho phép chiều cao tự động giãn theo nội dung */
+    min-height: 100vh; 
+    width: 100%;
+    
+    display: flex;
+    flex-direction: column; /* QUAN TRỌNG: Xếp dọc thay vì ngang */
+    align-items: center;    /* Căn giữa theo chiều ngang */
+    
+    /* Bỏ justify-content: center để không ép vào giữa màn hình nếu nội dung dài */
+    /* justify-content: center; <-- XÓA DÒNG NÀY HOẶC ĐỂ NÓ LÀ flex-start */
+    justify-content: flex-start; 
+    
+    padding: 40px 20px;     /* Tạo khoảng cách an toàn với mép màn hình */
+    box-sizing: border-box;
 }
+/* Chỉnh lại Login Card để nó luôn có khoảng cách với nội dung bên dưới */
 .login-card {
-    background:white;
-    border-radius:24px;
-    padding:20px 22px;
-    box-shadow:0 20px 40px rgba(15,23,42,0.2);
-    width:320px;
-    max-width:95vw;
+    background: white;
+    border-radius: 24px;
+    padding: 30px 22px; /* Tăng padding chút cho thoáng */
+    box-shadow: 0 20px 40px rgba(15,23,42,0.1); /* Giảm bóng một chút cho nhẹ */
+    width: 360px; /* Tăng chiều rộng lên chút cho đẹp */
+    max-width: 100%;
+    
+    /* Đẩy login card xuống một chút cho cân đối màn hình */
+    margin-top: 40px; 
+    margin-bottom: 40px; /* Cách phần Landing page bên dưới */
+    
+    flex-shrink: 0; /* Đảm bảo card không bị co lại khi màn hình bé */
+}
+
+/* Trang trí phần Landing Page (SEO Content) cho đẹp hơn */
+.seo-content {
+    width: 100%;
+    max-width: 900px; /* Giới hạn chiều rộng để dễ đọc */
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 .login-logo {
     display:flex;
@@ -1204,6 +1236,223 @@ body {
     to { opacity:1; transform: translateY(0); }
 }
 
+
+/* --- NHÃN TỪ MỚI (NEW) --- */
+.badge-new {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff4d4d, #f9cb28);
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 5px rgba(255, 77, 77, 0.4);
+    
+    /* Hiệu ứng nhịp đập */
+    animation: newPulse 1.5s infinite;
+}
+
+@keyframes newPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(255, 77, 77, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+}
+
+/* --- SRS POPUP STYLES --- */
+.srs-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed #e5e7eb;
+}
+.srs-item:last-child {
+    border-bottom: none;
+}
+.srs-word {
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 14px;
+}
+.srs-meaning {
+    color: #6b7280;
+    font-size: 13px;
+}
+.srs-date {
+    font-size: 10px;
+    background: #e0e7ff;
+    color: #4338ca;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   GLOBAL LOADER STYLES
+============================================================ */
+#global-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    z-index: 9999999; /* Luôn nằm trên cùng */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transition: opacity 0.5s ease-out, visibility 0.5s;
+}
+
+/* Class để ẩn loader khi load xong */
+#global-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loader-content {
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+
+.loader-icon {
+    font-size: 50px;
+    margin-bottom: 10px;
+    animation: bounce 1s infinite;
+}
+
+.loader-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #4f46e5;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+}
+
+/* Khu vực Mẹo */
+.tip-container {
+    min-height: 80px; /* Giữ chiều cao cố định để không bị giật layout */
+    margin-bottom: 20px;
+}
+
+.tip-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.tip-text {
+    font-size: 15px;
+    color: #374151;
+    font-weight: 500;
+    line-height: 1.5;
+    /* Hiệu ứng chuyển chữ mượt mà */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Class hỗ trợ hiệu ứng đổi chữ */
+.tip-text.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+.tip-text.fade-in {
+    opacity: 0; /* Bắt đầu ẩn */
+    transform: translateY(10px); /* Bắt đầu từ dưới */
+}
+
+/* Thanh Loading */
+.progress-container {
+    width: 100%;
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%; /* JS sẽ tăng cái này */
+    background: linear-gradient(90deg, #4f46e5, #a855f7);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    
+    /* Hiệu ứng ánh sáng chạy qua */
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* ============================================================
+   SEASONAL EFFECTS (Hiệu ứng theo mùa)
+============================================================ */
+.seasonal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Để bấm xuyên qua, không chặn chuột */
+    z-index: 999999;
+    overflow: hidden;
+}
+
+.falling-item {
+    position: absolute;
+    top: -50px;
+    user-select: none;
+    will-change: transform;
+    animation-name: seasonalFall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+/* Hiệu ứng rung lắc nhẹ khi rơi cho tự nhiên */
+@keyframes seasonalFall {
+    0% {
+        transform: translateY(0) rotate(0deg) translateX(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(110vh) rotate(360deg) translateX(20px);
+        opacity: 0;
+    }
+}
+
 /* ===============================
    RESPONSIVE
 =================================*/
@@ -1227,5 +1476,219 @@ body {
     .status-tag {
         font-size: 9px;
         padding: 2px 6px;
+    }
+
+    .login-wrapper {
+        padding: 20px 16px;
+    }
+    .login-card {
+        margin-top: 20px;
+        width: 100%;
+    }
+}
+@media (max-width: 768px) {
+    
+    /* 1. RESET LAYOUT TỔNG */
+    .app-shell {
+        padding: 10px; /* Giảm lề ngoài */
+    }
+    
+    .app {
+        display: flex;
+        flex-direction: column; /* Xếp chồng Sidebar lên trên, Main xuống dưới */
+        gap: 16px;
+    }
+
+    /* 2. BIẾN SIDEBAR THÀNH HEADER MENU */
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        border-radius: 16px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    /* Ẩn bớt các phần rườm rà trên Mobile cho gọn */
+    .goal-card, 
+    .footer-note,
+    .logo-text-sub { 
+        display: none; 
+    }
+    
+    .sidebar-bottom {
+        margin-top: 0;
+    }
+
+    .account-card {
+        margin-top: 10px;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .account-actions {
+        flex-direction: row; /* Nút dàn hàng ngang */
+        margin-top: 0;
+    }
+    .full-width {
+        width: auto;
+    }
+
+    /* Menu Nav dàn hàng ngang và cho phép trượt nếu dài */
+    .nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 5px; /* Để thanh cuộn không che nút */
+    }
+    .nav-button {
+        white-space: nowrap; /* Không xuống dòng */
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+    }
+    .nav-button.active {
+        background: #e0e7ff;
+        border-color: #4f46e5;
+    }
+
+    /* 3. MAIN CONTENT */
+    .main {
+        padding: 12px;
+        border-radius: 16px;
+    }
+    
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    /* Form nhập liệu: Chuyển thành 1 cột */
+    .form-grid {
+        grid-template-columns: 1fr; 
+    }
+    .form-field[style*="grid-column: span 2"] {
+        grid-column: auto !important; /* Reset các ô span 2 */
+    }
+
+    /* 4. BIẾN BẢNG TỪ VỰNG THÀNH DẠNG THẺ (CARD VIEW) - QUAN TRỌNG NHẤT */
+    
+    /* Ẩn dòng tiêu đề bảng (Word, IPA, Meaning...) */
+    .word-header {
+        display: none; 
+    }
+
+    /* Biến mỗi hàng thành 1 cái thẻ */
+    .word-row {
+        display: flex;
+        flex-direction: column; /* Xếp dọc các thông tin */
+        align-items: flex-start;
+        
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        position: relative;
+    }
+
+    /* --- TÙY CHỈNH TỪNG PHẦN TỬ TRONG THẺ --- */
+    
+    /* 1. Word (Từ vựng) - To và Đậm */
+    .word-row > div:nth-child(1) {
+        font-size: 16px;
+        font-weight: 700;
+        color: #4f46e5;
+        margin-bottom: 4px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Đẩy badge NEW sang phải nếu muốn */
+    }
+
+    /* 2. IPA - Màu xám, nhỏ */
+    .word-row > div:nth-child(2) {
+        font-size: 13px;
+        color: #6b7280;
+        font-family: monospace;
+        margin-bottom: 8px;
+    }
+    
+    /* Giả lập nhãn cho IPA (Optional) */
+    .word-row > div:nth-child(2):before {
+        content: "IPA: ";
+        font-weight: 600;
+        color: #9ca3af;
+    }
+
+    /* 3. Meaning (Nghĩa) - To rõ */
+    .word-row > div:nth-child(3) {
+        font-size: 15px;
+        font-weight: 500;
+        color: #111827;
+        margin-bottom: 6px;
+    }
+
+    /* 4. Sentence (Câu ví dụ) - In nghiêng */
+    .word-row > div:nth-child(4) {
+        font-size: 13px;
+        color: #4b5563;
+        font-style: italic;
+        background: #f9fafb;
+        padding: 6px 10px;
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 8px;
+    }
+
+    /* 5. Type (Loại từ) & 6. Folder - Xếp chung 1 hàng */
+    /* Chúng ta dùng order flexbox hoặc display logic nếu muốn ghép dòng */
+    
+    .word-row > div:nth-child(5) { /* Type */
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+    
+    .word-row > div:nth-child(6) { /* Folder */
+        font-size: 11px;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+    .word-row > div:nth-child(6):before {
+        content: "📂 ";
+    }
+
+    /* 7. Actions (Nút bấm) - Dàn full chiều ngang */
+    .word-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end; /* Căn phải */
+        gap: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #e5e7eb;
+    }
+
+    .mini-btn {
+        padding: 6px 14px; /* Nút to hơn cho dễ bấm */
+        font-size: 12px;
+    }
+    
+    /* Tối ưu ô tìm kiếm */
+    #search-input {
+        width: 100%; /* Full màn hình */
+        font-size: 14px;
+        padding: 10px 14px !important;
+    }
+    
+    /* Ẩn các cột thừa nếu có */
+    .word-empty {
+        text-align: center;
+        padding: 20px;
     }
 }

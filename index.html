@@ -2,8 +2,20 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Học từ vựng tiếng Anh</title>
+    <title>TNC English - Học từ vựng tiếng Anh qua Flashcard & AI</title>
+    
+    <meta name="description" content="Ứng dụng học từ vựng tiếng Anh miễn phí với phương pháp Lặp lại ngắt quãng (Spaced Repetition). Hỗ trợ tra từ điển, Flashcard, AI gợi ý và ôn tập hiệu quả." />
+    <meta name="keywords" content="học tiếng anh, từ vựng tiếng anh, flashcard, spaced repetition, ôn thi toeic, ielts, tnc english, vocab master" />
+    <meta name="author" content="TNC English" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <meta property="og:title" content="TNC English - Sổ tay từ vựng thông minh" />
+    <meta property="og:description" content="Học từ vựng siêu tốc với AI và phương pháp lặp lại ngắt quãng. Đăng ký ngay!" />
+    <meta property="og:image" content="https://tncenglish.io.vn/thumbnail.png" /> <meta property="og:url" content="https://tncenglish.io.vn" />
+    <meta property="og:type" content="website" />
+
+    <link rel="icon" href="https://fav.farm/📚" /> 
+
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -59,6 +71,9 @@
                     <div class="user-pill" id="user-display">Chưa đăng nhập</div>
                     <div class="account-actions">
                         <button class="btn-ghost full-width" id="change-password-button">🔑 Đổi mật khẩu</button>
+                        <button class="btn-ghost full-width" onclick="showApiKeyModal()" style="font-size:11px;">
+                            ⚙️ Cấu hình AI
+                        </button>
                         <button class="btn-ghost full-width" id="logout-button">🚪 Đăng xuất</button>
                     </div>
                 </div>
@@ -182,7 +197,6 @@
                         <div>Sentence</div>
                         <div>Type</div>
                         <div>Folder</div>
-                        <div>Status</div>
                         <div>Actions</div>
                     </div>
                     <div class="word-empty" id="word-empty">
@@ -402,7 +416,46 @@
     </div>
 </div>
 
+<div id="api-key-modal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-title">Cấu hình Gemini AI</div>
+        <div class="modal-sub">Nhập API Key để sử dụng tính năng gợi ý từ vựng, dịch nghĩa tự động.</div>
 
+        <div class="modal-form">
+            <div class="form-field">
+                <label>Gemini API Key</label>
+                <div style="position:relative;">
+                    <input type="password" id="input-gemini-key" placeholder="Nhập key của bạn (bắt đầu bằng AIza...)" style="padding-right: 30px;" />
+                    <span onclick="toggleKeyVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:14px;">👁️</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <div onclick="toggleApiGuide()" style="cursor:pointer; color:#4f46e5; font-size:13px; font-weight:600; display:flex; align-items:center; gap:4px;">
+                <span id="guide-arrow">▶</span> Hướng dẫn lấy Key (Miễn phí)
+            </div>
+            
+            <div id="api-guide-content" style="display:none; margin-top:8px; background:#f9fafb; padding:12px; border-radius:12px; font-size:12px; border:1px solid #e5e7eb;">
+                <ol style="margin:0; padding-left:20px; color:#374151; line-height:1.6;">
+                    <li>Truy cập <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4f46e5; font-weight:600;">Google AI Studio</a>.</li>
+                    <li>Đăng nhập bằng tài khoản Google của bạn.</li>
+                    <li>Nhấn vào nút to <b>"Create API key"</b>.</li>
+                    <li>Chọn <b>"Create API key in new project"</b>.</li>
+                    <li>Copy đoạn mã bắt đầu bằng <code>AIza...</code> và dán vào ô bên trên.</li>
+                </ol>
+                <div style="margin-top:6px; color:#059669; font-weight:500;">✨ Hoàn toàn miễn phí cho cá nhân.</div>
+            </div>
+        </div>
+
+        <div id="api-msg" class="modal-message"></div>
+
+        <div class="modal-actions">
+            <button class="btn-ghost" onclick="closeApiKeyModal()">Đóng</button>
+            <button class="btn-primary" onclick="saveApiKey()">Lưu cài đặt</button>
+        </div>
+    </div>
+</div>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -479,7 +532,41 @@
         </button>
     </div>
 </div>
+<div id="srs-modal" class="modal-backdrop" style="display:none; z-index:99999;">
+    <div class="modal-card" style="width: 400px; border-top: 5px solid #4f46e5;">
+        <div style="text-align:center; margin-bottom:12px;">
+            <div style="font-size: 40px;">🔔</div>
+            <div class="modal-title" style="color:#4f46e5;">Nhắc nhở ôn tập</div>
+            <p class="modal-sub">
+                Phương pháp <b>Lặp lại ngắt quãng</b>: Hãy lướt nhanh qua các từ bạn mới học trong 3 ngày qua để khắc sâu trí nhớ!
+            </p>
+        </div>
 
+        <div id="srs-list-container" style="max-height: 250px; overflow-y: auto; background: #f9fafb; padding: 10px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
+            </div>
+
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-primary" onclick="closeSRSModal()" style="width:100%;">Đã ôn xong, cảm ơn!</button>
+        </div>
+    </div>
+</div>
+
+<div id="global-loader">
+    <div class="loader-content">
+        <div class="loader-icon">📚</div>
+        
+        <div class="loader-title">Vocab Master</div>
+        
+        <div class="tip-container">
+            <div class="tip-label">💡 MẸO GHI NHỚ:</div>
+            <div id="loader-tip-text" class="tip-text">Đang tải dữ liệu...</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="loader-progress"></div>
+        </div>
+    </div>
+</div>
 <script src="main.js"></script>
 </body>
 </html>

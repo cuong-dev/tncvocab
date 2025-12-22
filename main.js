@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzGsNgcSExnTA8XVQZ5iJmu7hvjgNYfGw7IU294sV3a1VkmkuN7gQ3AENgLbb1LtOv1/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycby6IISpVGmgSipGIzB1sX1XDfQBn8AYCByLT5m9knc5kL6E9-xXdD1N12fxJkpXXyCp/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -94,29 +94,53 @@ function showToast(message, type = "info") {
 
 async function syncAccountStatus() {
     if (!currentUser || !currentUser.email) return;
+
     try {
         const res = await fetch(LOGIN_API_URL, {
             method: "POST", mode: "cors",
             body: JSON.stringify({ action: "checkStatus", email: currentUser.email })
         });
         const data = await res.json();
+
         if (data.status === "success") {
-            const newExpiry = data.expiryDate;
-            const newReg    = data.regDate;
+            // 1. Cập nhật ngày tháng (Logic cũ)
+            currentUser.expiryDate = data.expiryDate;
+            currentUser.regDate    = data.regDate;
+
+            // 2. CẬP NHẬT KEY (LOGIC MỚI QUAN TRỌNG)
+            // Lấy key mới nhất từ Sheet
+            const serverKey = data.geminiKey || ""; 
             
-            // Cập nhật cả 2 ngày
-            currentUser.expiryDate = newExpiry;
-            currentUser.regDate    = newReg;
+            // Nếu Key trên server khác Key dưới máy -> Cập nhật theo Server
+            if (currentUser.geminiKey !== serverKey) {
+                console.log("Phát hiện thay đổi Key từ Server. Đang đồng bộ...");
+                currentUser.geminiKey = serverKey;
+                
+                // Nếu Server trả về rỗng (tức là Admin đã xóa key trong Sheet)
+                // -> Xóa luôn trong localStorage để chặn dùng
+                if (!serverKey) {
+                    localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+                } else {
+                    localStorage.setItem(GEMINI_KEY_STORAGE_KEY, serverKey);
+                }
+            }
+
+            // Lưu profile mới nhất
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
 
-            // Nếu user vừa nạp tiền (Gói trả phí active)
+            // Cập nhật đèn trạng thái
+            if (typeof checkAiReadiness === "function") {
+                checkAiReadiness();
+            }
+
+            // Check gia hạn (như cũ)
             if (!isPaidExpired()) {
                 showToast("🎉 Tài khoản VIP đang hoạt động!", "success");
                 updateUserUI_Active();
                 closePremiumPopup();
             }
         }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Sync error:", err); }
 }
 function requireLoginOrRedirect() {
     try {
@@ -282,15 +306,15 @@ function sendWordToGoogleSheet_Add(word) {
             if (last && last.rowIndex == null) {
                 last.rowIndex = data.rowIndex;
             }
-            showToast("Đã lưu từ mới lên Google Sheets", "success");
+            showToast("Đã lưu từ mới ", "success");
         } else {
-            console.warn("Gửi Google Sheets (add) lỗi:", data);
-            showToast("Lưu từ mới lên Sheets bị lỗi", "error");
+            console.warn("Gửi  (add) lỗi:", data);
+            showToast("Lưu từ mới lên  bị lỗi", "error");
         }
     })
     .catch(err => {
-        console.error("POST Sheets add error:", err);
-        showToast("Không kết nối được Google Sheets", "error");
+        console.error("POST add error:", err);
+        showToast("Không kết nối được ", "error");
     });
 }
 
@@ -592,7 +616,7 @@ function playPronunciation(text) {
 function setEditMode(index) {
     editingIndex = index;
     if (index < 0) {
-        if (wordSubmitButton) wordSubmitButton.textContent = "+ Thêm vào Google Sheets";
+        if (wordSubmitButton) wordSubmitButton.textContent = "+ Thêm vào Danh Sách";
         if (cancelEditButton) cancelEditButton.style.display = "none";
         if (editHint)         editHint.style.display = "none";
 
@@ -625,6 +649,21 @@ function setEditMode(index) {
     }
 }
 
+function isRecentWord(dateString) {
+    if (!dateString) return false;
+    const addedDate = new Date(dateString);
+    const now = new Date();
+    
+    // Tính khoảng cách thời gian (mili giây)
+    const diffTime = now - addedDate;
+    
+    // Đổi ra ngày (1 ngày = 1000ms * 60s * 60m * 24h)
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    // Trả về true nếu nhỏ hơn hoặc bằng 3 ngày
+    return diffDays <= 3;
+}
+
 // ✅ Render list có lọc folder + search, và ẩn khi chưa chọn folder
 function renderWords(filterText = "") {
     const rows = Array.from(wordListEl.querySelectorAll(".word-row"));
@@ -633,33 +672,27 @@ function renderWords(filterText = "") {
         row.remove();
     });
 
-    // Mặc định ban đầu vào là chọn ALL luôn cho người dùng dễ thấy
     if (activeFolder === null) activeFolder = "ALL";
-
     const text = (filterText || "").trim().toLowerCase();
 
-    // 1. Lọc dữ liệu
-    const filtered = [];
+    // 1. LỌC DỮ LIỆU
+    let filtered = [];
     words.forEach((w, index) => {
         const f = (w.folder || "").trim();
 
-        // --- Logic lọc folder mới ---
+        // Lọc Folder
         if (activeFolder !== "ALL") {
             if (activeFolder === "_NO_FOLDER_") {
-                // Nếu đang chọn "Chưa phân loại", chỉ lấy từ ko có folder
                 if (f !== "") return; 
             } else {
-                // Nếu chọn folder thường, phải khớp tên
                 if (f !== activeFolder) return;
             }
         }
 
-        // Lọc theo search input
+        // Lọc Search
         if (text) {
             const match = (
-                (w.word || "")   + " " +
-                (w.meaning || "")+ " " +
-                (w.folder || "")
+                (w.word || "") + " " + (w.meaning || "") + " " + (w.folder || "")
             ).toLowerCase().includes(text);
             if (!match) return;
         }
@@ -667,14 +700,31 @@ function renderWords(filterText = "") {
         filtered.push({ w, index });
     });
 
+    // ============================================================
+    // 🔴 2. SẮP XẾP: ƯU TIÊN TỪ MỚI (3 NGÀY) LÊN ĐẦU
+    // ============================================================
+    filtered.sort((a, b) => {
+        const isNewA = isRecentWord(a.w.dateAdded);
+        const isNewB = isRecentWord(b.w.dateAdded);
+
+        if (isNewA && !isNewB) return -1; // A mới -> A lên trước
+        if (!isNewA && isNewB) return 1;  // B mới -> B lên trước
+        
+        // Nếu cùng là mới hoặc cùng là cũ -> Giữ nguyên thứ tự gốc (mới thêm nằm dưới)
+        // Hoặc muốn đảo ngược (mới thêm lên đầu trong nhóm cũ) thì dùng: return b.index - a.index;
+        return 0; 
+    });
+    // ============================================================
+
+
     const totalItems = filtered.length;
 
     if (totalItems === 0) {
         wordEmptyEl.style.display = "block";
         if (activeFolder === "_NO_FOLDER_") {
-            wordEmptyEl.textContent = "Bạn đã phân loại hết các từ rồi! (Không có từ nào chưa có folder)";
+            wordEmptyEl.textContent = "Bạn đã phân loại hết các từ rồi!";
         } else {
-            wordEmptyEl.textContent = "Không có từ nào trong mục này.";
+            wordEmptyEl.textContent = "Không có từ nào khớp với bộ lọc.";
         }
         if (paginationEl) paginationEl.innerHTML = "";
         return;
@@ -682,112 +732,99 @@ function renderWords(filterText = "") {
         wordEmptyEl.style.display = "none";
     }
 
-    // 2. Phân trang & Render (Giữ nguyên logic cũ)
+    // 3. PHÂN TRANG
     const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
     if (currentPage > totalPages) currentPage = totalPages;
-
     const start = (currentPage - 1) * PAGE_SIZE;
     const end   = start + PAGE_SIZE;
     const pageItems = filtered.slice(start, end);
 
+    // 4. RENDER HTML
     pageItems.forEach(({ w, index }) => {
         const row = document.createElement("div");
         row.className = "word-row";
 
-        // ... Tạo các cột (Word, IPA, Meaning...) - Code phần này giữ nguyên như cũ ...
-        // (Để tiết kiệm không gian chat, bạn giữ nguyên phần tạo HTML bên trong vòng lặp này nhé)
-        // Chỉ cần copy đoạn tạo row cũ paste vào đây
-        
+        // 1. Cột WORD (Giữ nguyên logic Badge NEW)
         const wordCell = document.createElement("div");
-        wordCell.textContent = w.word;
+        let newBadgeHtml = "";
+        if (isRecentWord(w.dateAdded)) {
+            newBadgeHtml = `<span class="badge-new">NEW</span>`;
+        }
+        wordCell.innerHTML = `
+            <span style="font-weight:600; color:#1f2937;">${w.word}</span>
+            ${newBadgeHtml}
+        `;
 
+        // 2. Cột IPA
         const ipaCell = document.createElement("div");
         ipaCell.textContent = w.ipa || "—";
 
+        // 3. Cột MEANING
         const meaningCell = document.createElement("div");
         meaningCell.textContent = w.meaning;
 
+        // 4. Cột SENTENCE
         const sentenceCell = document.createElement("div");
         sentenceCell.textContent = w.sentence || "—";
 
+        // 5. Cột TYPE
         const typeCell = document.createElement("div");
         const typeSpan = document.createElement("span");
         typeSpan.className = "tag-level " + getTypeTagClass(w.type);
         typeSpan.textContent = w.type || "—";
         typeCell.appendChild(typeSpan);
 
+        // 6. Cột FOLDER
         const folderCell = document.createElement("div");
-        folderCell.textContent = w.folder || "—"; // Hiển thị dấu gạch nếu ko có folder
+        folderCell.textContent = w.folder || "—";
 
-        const statusCell = document.createElement("div");
-        const statusSpan = document.createElement("span");
-        statusSpan.className = "status-pill " + getStatusClass(w.status);
-        statusSpan.textContent = w.status || "new";
-        statusCell.appendChild(statusSpan);
+        /* ❌ ĐÃ XÓA CỘT STATUS Ở ĐÂY 
+           (Không tạo statusCell và statusSpan nữa)
+        */
 
+        // 7. Cột ACTIONS
         const actionsCell = document.createElement("div");
         actionsCell.className = "word-actions";
 
-        // Các nút Sound, Edit, Delete
         const soundBtn = document.createElement("button");
-        soundBtn.type = "button";
         soundBtn.textContent = "🔊";
         soundBtn.className = "mini-btn voice";
-        soundBtn.addEventListener("click", () => playPronunciation(w.word));
+        soundBtn.onclick = () => playPronunciation(w.word);
 
         const editBtn = document.createElement("button");
-        editBtn.type = "button";
         editBtn.textContent = "Sửa";
         editBtn.className = "mini-btn edit";
-        editBtn.addEventListener("click", ()  => {
-            if (!checkAccess()) return; // <--- Chặn
-                setEditMode(index);
-        });
+        editBtn.onclick = () => { if(checkAccess()) setEditMode(index); };
 
         const delBtn = document.createElement("button");
-        delBtn.type = "button";
         delBtn.textContent = "Xóa";
         delBtn.className = "mini-btn delete";
-        delBtn.addEventListener("click", async () => {
-            if (!checkAccess()) return;
-             if (!confirm(`Xóa từ "${w.word}"?`)) return;
-             try {
-                const data = await sendWordToGoogleSheet_Delete(index);
-                if (data && data.status === "success") {
-                    words.splice(index, 1);
-                    renderWords(searchInput.value);
-                    updateCount();
-                    if (editingIndex === index) setEditMode(-1);
-                    updateFolderSuggestions(); 
-                    showToast("Đã xóa từ", "success");
-                } else {
-                    showToast("Xóa thất bại", "error");
-                }
-            } catch (err) {
-                console.error(err);
-                showToast("Lỗi kết nối", "error");
+        delBtn.onclick = async () => {
+            if(!checkAccess()) return;
+            if(confirm(`Xóa từ "${w.word}"?`)) {
+                try {
+                    const data = await sendWordToGoogleSheet_Delete(index);
+                    if(data && data.status==="success") {
+                        words.splice(index, 1);
+                        renderWords(searchInput.value);
+                        updateCount();
+                        updateFolderSuggestions(); 
+                        showToast("Đã xóa từ", "success");
+                    } else showToast("Xóa thất bại", "error");
+                } catch(e) { console.error(e); showToast("Lỗi kết nối", "error"); }
             }
-        });
+        };
 
-        actionsCell.appendChild(soundBtn);
-        actionsCell.appendChild(editBtn);
-        actionsCell.appendChild(delBtn);
+        actionsCell.append(soundBtn, editBtn, delBtn);
 
-        row.appendChild(wordCell);
-        row.appendChild(ipaCell);
-        row.appendChild(meaningCell);
-        row.appendChild(sentenceCell);
-        row.appendChild(typeCell);
-        row.appendChild(folderCell);
-        row.appendChild(statusCell);
-        row.appendChild(actionsCell);
-
+        // LƯU Ý: Dòng append dưới đây KHÔNG còn biến statusCell nữa
+        row.append(wordCell, ipaCell, meaningCell, sentenceCell, typeCell, folderCell, actionsCell);
+        
         wordListEl.appendChild(row);
     });
 
     renderPagination(totalPages, totalItems);
 }
-
 // ===== AI – GỌI GEMINI =====
 async function aiGenerateWordData(word) {
     const key = getGeminiKey();
@@ -889,8 +926,46 @@ if (wordForm) {
         const status   = statusSelect.value || "new";
         const sentence = (sentenceInput.value || "").trim();
 
-        if (!word || !meaning) return;
+        if (!word || !meaning) {
+            showToast("Vui lòng nhập từ và nghĩa", "error");
+            return;
+        }
+// ============================================================
+        // 🔴 THÊM ĐOẠN CHECK TRÙNG LẶP Ở ĐÂY
+        // ============================================================
+        
+        const inputLower = word.toLowerCase(); // Chuyển về chữ thường để so sánh
 
+        const isDuplicate = words.some((w, index) => {
+            // Nếu đang ở chế độ Sửa (editingIndex >= 0)
+            // thì bỏ qua chính từ đang sửa (index === editingIndex)
+            if (editingIndex >= 0 && index === editingIndex) {
+                return false; 
+            }
+            // So sánh từ (word) trong danh sách với từ mới nhập
+            return (w.word || "").toLowerCase() === inputLower;
+        });
+
+        if (isDuplicate) {
+            showToast(`Từ "${word}" đã có trong danh sách rồi!`, "error");
+            
+            // Hiệu ứng cảnh báo: Rung lắc hoặc đỏ ô input
+            wordInput.focus();
+            wordInput.style.borderColor = "#ef4444"; // Viền đỏ
+            wordInput.style.backgroundColor = "#fef2f2"; // Nền đỏ nhạt
+            
+            // Trả lại màu bình thường sau 2 giây
+            setTimeout(() => {
+                wordInput.style.borderColor = "";
+                wordInput.style.backgroundColor = "";
+            }, 2000);
+
+            return; // ⛔ DỪNG NGAY, KHÔNG LƯU NỮA
+        }
+
+        // ============================================================
+        // KẾT THÚC ĐOẠN CHECK TRÙNG
+        // ============================================================
         const newWord = { word, meaning, folder, ipa, type, sentence, status };
 
         if (editingIndex < 0) {
@@ -917,7 +992,7 @@ if (wordForm) {
                     renderWords(searchInput.value);
                     setEditMode(-1);
                     updateFolderSuggestions();
-                    showToast("Đã cập nhật từ trên Sheets", "success");
+                    showToast("Đã cập nhật từ ", "success");
                 } else {
                     alert(data && data.message ? data.message : "Cập nhật thất bại");
                     showToast("Cập nhật từ thất bại", "error");
@@ -946,7 +1021,7 @@ if (reloadButton) {
         updateStreak();
         updateFolderSuggestions();
         setEditMode(-1);
-        showToast("Đã tải lại từ Google Sheets", "info");
+        showToast("Đã tải lại từ Danh Sách", "info");
     });
 }
 
@@ -1118,46 +1193,66 @@ if (geminiForm) {
 // AI button
 if (aiButton) {
     aiButton.addEventListener("click", async () => {
+        // 1. Kiểm tra quyền hạn (VIP/Trial)
         if (!checkAccess()) return;
+        
         const word = (wordInput.value || "").trim();
         if (!word) {
-            alert("Hãy nhập Word trước khi dùng AI gợi ý.");
+            alert("Hãy nhập từ vựng (Word) trước khi nhờ AI gợi ý.");
             return;
         }
 
-        if (!getGeminiKey()) {
-            showToast("Bạn chưa thiết lập Gemini API key", "info");
-            openGeminiModal();
-            return;
-        }
-
+        const originalBtnText = aiButton.textContent;
+        
+        // 2. CHECK ÂM THẦM (Chỉ disable nút để tránh spam click)
         aiButton.disabled = true;
-        aiButton.textContent = "⏳ AI đang nghĩ...";
-        openAiModal(word);
-
+        // aiButton.textContent = "Checking..."; // Không cần đổi text nếu muốn hoàn toàn âm thầm
+        
         try {
+            // Đồng bộ nhẹ với Server để đảm bảo Key chưa bị Admin xóa
+            await syncAccountStatus(); 
+
+            // Lấy key hiện tại
+            const currentKey = currentUser ? currentUser.geminiKey : "";
+
+            // --- TRƯỜNG HỢP 1: KHÔNG CÓ KEY (MỞ MODAL NGAY) ---
+            if (!currentKey) {
+                // Mở modal cấu hình để người dùng tự nhập và kiểm tra trong đó
+                showApiKeyModal();
+                return; // Dừng tại đây
+            }
+
+            // --- TRƯỜNG HỢP 2: CÓ KEY -> GỌI AI ---
+            aiButton.textContent = "⏳ AI đang nghĩ...";
+            openAiModal(word); 
+
+            // Gọi hàm AI
             const aiData = await aiGenerateWordData(word);
 
+            // Điền dữ liệu
             ipaInput.value      = aiData.ipa      || "";
             typeInput.value     = aiData.type     || "";
             meaningInput.value  = aiData.meaning  || "";
             sentenceInput.value = aiData.sentence || "";
             statusSelect.value  = aiData.status   || "new";
 
-            showToast("AI đã gợi ý nội dung cho từ", "success");
+            showToast("AI đã gợi ý thành công!", "success");
+
         } catch (err) {
-            console.error("AI error:", err);
-            if (err.message === "NO_GEMINI_KEY") {
-                showToast("Chưa có Gemini key", "error");
-                openGeminiModal();
+            console.error("AI Error:", err);
+            
+            // Nếu lỗi do Key sai/hết hạn (Google trả về 400/403) -> Cũng mở Modal cấu hình
+            if (err.message === "NO_GEMINI_KEY" || err.message.includes("400") || err.message.includes("403")) {
+                showToast("Key lỗi hoặc hết hạn. Vui lòng kiểm tra lại.", "error");
+                showApiKeyModal();
             } else {
-                alert("AI lỗi: " + err.message);
-                showToast("AI gợi ý thất bại", "error");
+                showToast("Lỗi kết nối AI: " + err.message, "error");
             }
         } finally {
+            // Dọn dẹp
             closeAiModal();
             aiButton.disabled = false;
-            aiButton.textContent = "🤖 AI gợi ý nội dung";
+            aiButton.textContent = originalBtnText;
         }
     });
 }
@@ -2016,6 +2111,446 @@ function updateUserUI_Expired() {
         }
     }
 }
+
+// ==========================================
+// CẬP NHẬT: MỞ MODAL & TỰ ĐỘNG CHECK KEY
+// ==========================================
+
+async function showApiKeyModal() {
+    console.log("--- Bắt đầu mở Modal & Check Key ---");
+    
+    const modal = document.getElementById("api-key-modal");
+    const input = document.getElementById("input-gemini-key");
+    const msg = document.getElementById("api-msg");
+    const saveBtn = document.querySelector("#api-key-modal .btn-primary");
+
+    if (modal) {
+        modal.style.display = "flex";
+
+        // 1. HIỆN TRẠNG THÁI LOADING (Rõ ràng hơn)
+        if (msg) {
+            msg.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; color:#6b7280;">
+                    <div class="mini-spinner" style="border-top-color:#6b7280;"></div> 
+                    <span>Đang đồng bộ trạng thái với Server...</span>
+                </div>
+            `;
+            msg.className = "modal-message";
+        }
+        
+        // Khóa input trong lúc check
+        if (input) {
+            input.value = "Đang tải..."; // Xóa text cũ để người dùng biết đang load
+            input.disabled = true; 
+            input.style.backgroundColor = "#f3f4f6";
+        }
+        if (saveBtn) saveBtn.disabled = true;
+
+        // 2. GỌI ĐỒNG BỘ SERVER
+        // Thêm delay 500ms để người dùng kịp nhìn thấy hiệu ứng (UX tốt hơn)
+        await new Promise(r => setTimeout(r, 500)); 
+        await syncAccountStatus(); 
+
+        console.log("--- Đồng bộ xong. Key hiện tại:", currentUser ? currentUser.geminiKey : "Không có");
+
+        // 3. LẤY KEY MỚI NHẤT
+        const currentKey = currentUser ? currentUser.geminiKey : "";
+        
+        // 4. CẬP NHẬT GIAO DIỆN KẾT QUẢ
+        if (input) {
+            input.value = currentKey;
+            input.disabled = false; 
+            input.style.backgroundColor = "#ffffff";
+            // Tự động focus để nhập nếu trống
+            if(!currentKey) setTimeout(() => input.focus(), 100);
+        }
+        if (saveBtn) saveBtn.disabled = false;
+        
+        if (msg) {
+            if (currentKey) {
+                msg.textContent = "✅ Key hợp lệ và đang hoạt động.";
+                msg.className = "modal-message success";
+            } else {
+                msg.textContent = "⚠️ Tài khoản chưa có API Key (hoặc đã bị xóa).";
+                msg.className = "modal-message error";
+            }
+        }
+    }
+}
+
+// 2. Đóng Modal
+function closeApiKeyModal() {
+    const modal = document.getElementById("api-key-modal");
+    if (modal) modal.style.display = "none";
+}
+
+// 3. Toggle Hướng dẫn (Xổ xuống/Thu gọn)
+function toggleApiGuide() {
+    const content = document.getElementById("api-guide-content");
+    const arrow = document.getElementById("guide-arrow");
+    
+    if (content.style.display === "none") {
+        content.style.display = "block";
+        arrow.textContent = "▼"; // Mũi tên xuống
+    } else {
+        content.style.display = "none";
+        arrow.textContent = "▶"; // Mũi tên phải
+    }
+}
+
+// 4. Toggle Ẩn/Hiện Key (Mắt thần)
+function toggleKeyVisibility() {
+    const input = document.getElementById("input-gemini-key");
+    if (input.type === "password") {
+        input.type = "text";
+    } else {
+        input.type = "password";
+    }
+}
+
+// 5. Lưu Key
+// ==========================================
+// API KEY MANAGER (VALIDATE & SYNC)
+// ==========================================
+
+// 1. Hàm Lưu Key: (Test Key cũ -> Lưu Backend cũ -> Cập nhật UI)
+async function saveApiKey() {
+    const input = document.getElementById("input-gemini-key");
+    const msg = document.getElementById("api-msg");
+    const saveBtn = document.querySelector("#api-key-modal .btn-primary"); // Nút Lưu trong modal mới
+    const newKey = input.value.trim();
+
+    if (!newKey) {
+        msg.textContent = "Vui lòng nhập API Key.";
+        msg.className = "modal-message error";
+        return;
+    }
+
+    // UI Loading
+    if(saveBtn) {
+        saveBtn.textContent = "⏳ Đang kiểm tra...";
+        saveBtn.disabled = true;
+    }
+    msg.textContent = "Đang kết nối thử đến Gemini...";
+    msg.className = "modal-message";
+
+    try {
+        // --- BƯỚC 1: GỌI HÀM CŨ ĐỂ TEST KEY (Validate) ---
+        // Lưu ý: Hàm testGeminiKey của bạn đang throw Error nếu lỗi, nên ta dùng try/catch
+        await testGeminiKey(newKey); 
+
+        // Nếu qua được dòng trên nghĩa là Key ngon
+        
+        // --- BƯỚC 2: GỌI BACKEND CŨ ĐỂ LƯU (action: saveGeminiKey) ---
+        msg.textContent = "Key hợp lệ! Đang lưu vào hệ thống...";
+        msg.className = "modal-message success";
+
+        const res = await fetch(LOGIN_API_URL, {
+            method: "POST", 
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, // Quan trọng cho Apps Script
+            body: JSON.stringify({ 
+                action: "saveGeminiKey", // Action cũ backend đã có
+                email: currentUser.email,
+                key: newKey              // Tên trường khớp với backend cũ
+            })
+        });
+        
+        // Apps Script đôi khi trả về text lỗi HTML nếu sai URL, cần check
+        let data;
+        if (res.ok) {
+             data = await res.json();
+        } else {
+             throw new Error("Lỗi kết nối Server Apps Script");
+        }
+
+        if (data.status === "success") {
+            // Cập nhật Client
+            currentUser.geminiKey = newKey;
+            
+            // Lưu cache user profile
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+            localStorage.setItem(GEMINI_KEY_STORAGE_KEY, newKey);
+
+            msg.textContent = "✅ Đã lưu thành công!";
+            msg.className = "modal-message success";
+            
+            // Cập nhật đèn xanh ở sidebar
+            checkAiReadiness(); 
+
+            setTimeout(() => closeApiKeyModal(), 1500);
+        } else {
+            msg.textContent = "Lỗi lưu server: " + (data.message || "Unknown error");
+            msg.className = "modal-message error";
+        }
+
+    } catch (err) {
+        console.error(err);
+        // Nếu testGeminiKey throw lỗi hoặc lỗi mạng
+        let errStr = err.message || "Key không hoạt động";
+        if (errStr.includes("HTTP")) errStr = "Key sai hoặc lỗi mạng.";
+        
+        msg.textContent = "❌ Lỗi: " + errStr;
+        msg.className = "modal-message error";
+    } finally {
+        if(saveBtn) {
+            saveBtn.textContent = "Lưu cài đặt";
+            saveBtn.disabled = false;
+        }
+    }
+}
+
+// 2. Hàm hiển thị đèn trạng thái (Xanh/Đỏ) ở Sidebar
+function checkAiReadiness() {
+    const configBtn = document.getElementById("btn-config-ai");
+    if (!configBtn) return;
+
+    // Kiểm tra trong biến currentUser (đã được sync từ Sheet khi init)
+    const hasKey = currentUser && currentUser.geminiKey && currentUser.geminiKey.length > 20;
+
+    if (hasKey) {
+        // Đèn xanh
+        configBtn.innerHTML = `⚙️ Cấu hình AI <span style="color:#10b981; margin-left:auto; font-size:14px;">●</span>`;
+        configBtn.title = "AI đã sẵn sàng";
+    } else {
+        // Đèn đỏ
+        configBtn.innerHTML = `⚙️ Cấu hình AI <span style="color:#ef4444; margin-left:auto; font-size:14px;">●</span>`;
+        configBtn.title = "Chưa có API Key";
+    }
+}
+
+// ==========================================
+// SPACED REPETITION SYSTEM (SRS)
+// ==========================================
+
+function checkAndShowSRSPopup() {
+    // 1. Kiểm tra xem hôm nay đã hiện chưa
+    const todayStr = new Date().toDateString(); // VD: "Tue Dec 24 2024"
+    const lastCheck = localStorage.getItem("vocab_srs_last_date");
+
+    if (lastCheck === todayStr) {
+        console.log("Hôm nay đã nhắc nhở ôn tập rồi.");
+        return; // Đã hiện hôm nay rồi thì thôi
+    }
+
+    // 2. Lọc các từ trong vòng 3 ngày (Sử dụng hàm isRecentWord đã làm ở bước trước)
+    // Lưu ý: Đảm bảo words đã được load từ Sheet xong mới chạy hàm này
+    const wordsToReview = words.filter(w => isRecentWord(w.dateAdded));
+
+    if (wordsToReview.length === 0) {
+        return; // Không có từ mới nào thì không làm phiền
+    }
+
+    // 3. Render danh sách vào Modal
+    const container = document.getElementById("srs-list-container");
+    if (!container) return;
+    
+    container.innerHTML = ""; // Reset
+
+    wordsToReview.forEach(w => {
+        const div = document.createElement("div");
+        div.className = "srs-item";
+        
+        // Tính xem từ này học cách đây mấy ngày
+        const diffTime = new Date() - new Date(w.dateAdded);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const dayLabel = diffDays === 0 ? "Hôm nay" : `${diffDays} ngày trước`;
+
+        div.innerHTML = `
+            <div>
+                <div class="srs-word">${w.word}</div>
+                <div class="srs-meaning">${w.meaning}</div>
+            </div>
+            <div class="srs-date">${dayLabel}</div>
+        `;
+        container.appendChild(div);
+    });
+
+    // 4. Hiển thị Modal
+    const modal = document.getElementById("srs-modal");
+    if (modal) {
+        modal.style.display = "flex";
+        // Hiệu ứng nhẹ
+        setTimeout(() => modal.classList.add("show"), 10);
+    }
+
+    // 5. Đánh dấu là đã hiện hôm nay
+    localStorage.setItem("vocab_srs_last_date", todayStr);
+}
+
+function closeSRSModal() {
+    const modal = document.getElementById("srs-modal");
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("show");
+    }
+}
+
+// ==========================================
+// LOADER & TIPS SYSTEM
+// ==========================================
+const LOADING_TIPS = [
+    "Phương pháp Spaced Repetition giúp bạn nhớ từ vựng lâu gấp 10 lần.",
+    "Đừng chỉ học từ đơn lẻ, hãy đặt nó vào một câu ví dụ cụ thể.",
+    "Học 5 từ mỗi ngày đều đặn tốt hơn học 50 từ một lúc rồi bỏ cuộc.",
+    "Sử dụng hình ảnh và âm thanh để kích thích não bộ ghi nhớ.",
+    "Ôn tập lại từ vựng trước khi đi ngủ giúp não bộ lưu trữ tốt hơn.",
+    "Hãy thử đặt câu với từ mới ngay khi bạn vừa học được.",
+    "Kiên trì là chìa khóa. Streak không chỉ là con số, nó là thói quen.",
+    "Dùng AI gợi ý để tìm các ngữ cảnh sử dụng từ tự nhiên nhất."
+];
+
+let tipInterval;
+let progressValue = 0;
+
+function startLoaderSystem() {
+    const tipTextEl = document.getElementById("loader-tip-text");
+    const progressBar = document.getElementById("loader-progress");
+    
+    // 1. Random Tip đầu tiên
+    if (tipTextEl) {
+        tipTextEl.textContent = LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)];
+    }
+
+    // 2. Chạy vòng lặp đổi Tip (Mỗi 2.5s)
+    tipInterval = setInterval(() => {
+        if (!tipTextEl) return;
+        
+        // Fade out
+        tipTextEl.classList.add("fade-out");
+        
+        setTimeout(() => {
+            // Đổi text
+            const randomTip = LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)];
+            tipTextEl.textContent = randomTip;
+            
+            // Fade in
+            tipTextEl.classList.remove("fade-out");
+        }, 500); // Khớp với transition CSS
+    }, 2500);
+
+    // 3. Giả lập thanh Progress chạy từ từ đến 90% (để người dùng đỡ sốt ruột)
+    // Nếu mạng nhanh thì nó sẽ nhảy vọt lên 100% khi xong.
+    const fakeProgress = setInterval(() => {
+        if (progressValue < 90) {
+            progressValue += Math.random() * 5; // Tăng ngẫu nhiên
+            if (progressBar) progressBar.style.width = Math.min(progressValue, 90) + "%";
+        } else {
+            clearInterval(fakeProgress);
+        }
+    }, 200);
+}
+
+function stopLoaderSystem() {
+    const loader = document.getElementById("global-loader");
+    const progressBar = document.getElementById("loader-progress");
+    
+    // Đẩy thanh progress lên 100%
+    if (progressBar) progressBar.style.width = "100%";
+
+    // Dừng đổi tip
+    if (tipInterval) clearInterval(tipInterval);
+
+    // Đợi xíu cho thanh progress chạy hết rồi mới ẩn
+    setTimeout(() => {
+        if (loader) {
+            loader.classList.add("hidden");
+            
+            // Xóa khỏi DOM sau khi ẩn hẳn để nhẹ máy (Optional)
+            setTimeout(() => {
+                loader.style.display = "none";
+            }, 500);
+        }
+    }, 500);
+}
+
+// ==========================================
+// SEASONAL EFFECTS ENGINE
+// ==========================================
+
+const SEASONAL_CONFIG = [
+    // Tháng (month): 1-12, Ngày (day): 1-31
+    // duration: Số ngày hiển thị trước sự kiện (mặc định 7)
+    
+    { name: "Christmas",     month: 12, day: 25, icon: "❄️", duration: 7 }, // Tuyết rơi
+    { name: "NewYear",       month: 1,  day: 1,  icon: "✨", duration: 3 }, // Pháo hoa/Lấp lánh
+    { name: "Tet_2025",      month: 1,  day: 29, icon: "🌸", duration: 10 }, // Tết Âm 2025 (Cần cập nhật hàng năm)
+    { name: "Valentine",     month: 2,  day: 14, icon: "❤️", duration: 3 }, // Tim bay
+    { name: "Halloween",     month: 10, day: 31, icon: "🎃", duration: 5 }, // Bí ngô
+    { name: "HungKings",     month: 4,  day: 6,  icon: "🇻🇳", duration: 1 }, // Giỗ tổ (10/3 Âm - Ví dụ năm 2025 là 6/4 Dương)
+];
+
+function initSeasonalEffects() {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    // 1. Tìm sự kiện đang diễn ra
+    const activeEvent = SEASONAL_CONFIG.find(event => {
+        // Tạo ngày sự kiện trong năm nay
+        const eventDate = new Date(currentYear, event.month - 1, event.day);
+        
+        // Tính ngày bắt đầu hiển thị (trước duration ngày)
+        const startDate = new Date(eventDate);
+        startDate.setDate(eventDate.getDate() - event.duration);
+
+        // Kiểm tra: Hôm nay có nằm giữa [Ngày bắt đầu] và [Ngày sự kiện] không?
+        // (Cộng thêm 1 ngày cho eventDate để tính cả chính ngày lễ)
+        const endDate = new Date(eventDate);
+        endDate.setDate(eventDate.getDate() + 1);
+
+        return today >= startDate && today < endDate;
+    });
+
+    // 2. Nếu có sự kiện -> Kích hoạt hiệu ứng
+    if (activeEvent) {
+        console.log(`🎉 Đang diễn ra sự kiện: ${activeEvent.name}`);
+        startFallingEffect(activeEvent.icon);
+        
+        // (Tùy chọn) Có thể đổi Logo tạm thời
+        // updateLogoForSeason(activeEvent.name);
+    }
+}
+
+function startFallingEffect(iconChar) {
+    // Tạo container
+    let container = document.getElementById("seasonal-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "seasonal-container";
+        container.className = "seasonal-container";
+        document.body.appendChild(container);
+    }
+
+    // Hàm tạo 1 hạt rơi
+    function createFlake() {
+        const el = document.createElement("div");
+        el.className = "falling-item";
+        el.textContent = iconChar;
+        
+        // Random vị trí và kích thước
+        const left = Math.random() * 100; // 0% - 100% chiều ngang
+        const size = Math.random() * 20 + 10; // 10px - 30px
+        const duration = Math.random() * 3 + 2; // Rơi trong 2s - 5s
+        const delay = Math.random() * 2; // Delay ngẫu nhiên
+
+        el.style.left = left + "%";
+        el.style.fontSize = size + "px";
+        el.style.animationDuration = duration + "s";
+        el.style.animationDelay = delay + "s";
+
+        container.appendChild(el);
+
+        // Tự xóa sau khi rơi xong để nhẹ máy
+        setTimeout(() => {
+            el.remove();
+        }, (duration + delay) * 1000);
+    }
+
+    // Bắn hạt liên tục (nhưng vừa phải để không lag)
+    // Cứ 300ms tạo 1 hạt (tăng giảm số này để chỉnh mật độ)
+    setInterval(createFlake, 300);
+}
+
 // ===== INIT =====
 function initStatusSelectOptions() {
     if (!statusSelect) return;
@@ -2031,19 +2566,44 @@ function initStatusSelectOptions() {
 
 
 (async function init() {
-    requireLoginOrRedirect();
-    
-    await syncAccountStatus(); 
-    startRealtimeLoop();
-    startExpirationLoop();
+    // 1. BẮT ĐẦU MÀN HÌNH CHỜ NGAY LẬP TỨC
+    startLoaderSystem();
+// --- KÍCH HOẠT HIỆU ỨNG MÙA ---
+    initSeasonalEffects(); 
+    // ------------------------------
+    try {
+        // --- Các tác vụ khởi tạo ---
+        requireLoginOrRedirect();
+        
+        // Chạy song song các tác vụ nặng để tiết kiệm thời gian
+        // (Thay vì await từng cái, ta dùng Promise.all)
+        await Promise.all([
+            syncAccountStatus(),
+            fetchWordsFromSheet(),
+            fetchIrregularVerbsFromSheet() // Tải sẵn cái này luôn cho nhanh
+        ]);
+        
+        // Khởi tạo logic chạy ngầm
+        startRealtimeLoop();
+        startExpirationLoop();
 
-    // Gọi hàm cập nhật UI mới
-    updateUI_InitState();
+        // Render giao diện
+        updateUI_InitState();
+        initStatusSelectOptions();
+        renderWords();
+        updateCount();
+        updateStreak();
+        updateFolderSuggestions();
 
-    initStatusSelectOptions();
-    await fetchWordsFromSheet();
-    renderWords();
-    updateCount();
-    updateStreak();
-    updateFolderSuggestions();
+        // Check SRS
+        checkAndShowSRSPopup();
+
+    } catch (err) {
+        console.error("Init Error:", err);
+        // Có thể hiện Toast báo lỗi ở đây nếu muốn
+    } finally {
+        // 2. QUAN TRỌNG: TẮT MÀN HÌNH CHỜ DÙ THÀNH CÔNG HAY THẤT BẠI
+        // Để tránh user bị kẹt mãi ở màn hình loading
+        stopLoaderSystem();
+    }
 })();

@@ -1086,10 +1086,6 @@ body {
     border-radius: 6px;
 }
 
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
 
 /* Hiệu ứng hiện modal mượt mà */
 #celebration-modal.show {

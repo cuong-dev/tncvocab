@@ -1605,7 +1605,19 @@ function renderFlashcard() {
 }
 
 function flipCard() {
-    document.getElementById('flashcard-el').classList.toggle('is-flipped');
+    const card = document.getElementById("flashcard-el");
+    if (!card) return;
+
+    // Lật thẻ bằng cách toggle class 'is-flipped'
+    card.classList.toggle("is-flipped");
+
+    // Kiểm tra nếu thẻ đang lật sang mặt sau (hoặc vừa ấn lật) thì phát âm
+    // Ở đây chúng ta sẽ lấy từ đang hiển thị ở mặt trước để phát âm
+    const wordText = document.getElementById("fc-word").textContent;
+    
+    if (wordText && wordText !== "Word") {
+        playPronunciation(wordText);
+    }
 }
 
 function nextFlashcard() {
@@ -1854,6 +1866,14 @@ function openPremiumModal() {
 
     // Hiện Modal
     modal.style.display = "flex";
+
+    const logoutBtn = document.getElementById("force-logout-btn");
+
+    logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+        window.location.href = "login.html";
+    });
 }
 
 // Hàm kiểm tra xem có còn trong thời gian DÙNG THỬ (24h) không
@@ -3129,6 +3149,7 @@ function initStatusSelectOptions() {
     startLoaderSystem();
 // --- KÍCH HOẠT HIỆU ỨNG MÙA ---
     initUnifiedEffects();
+    closeApiKeyModal();
     // ------------------------------
     try {
         // --- Các tác vụ khởi tạo ---

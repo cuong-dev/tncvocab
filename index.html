@@ -14,7 +14,7 @@
     <meta property="og:image" content="https://tncenglish.io.vn/thumbnail.png" /> <meta property="og:url" content="https://tncenglish.io.vn" />
     <meta property="og:type" content="website" />
 
-    <link rel="icon" href="https://fav.farm/📚" /> 
+    <link rel="icon" href="https://tncenglish.io.vn/logo.png" /> 
 
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -28,85 +28,61 @@
     <div class="app">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div>
-                <div class="logo-block">
-                    <div class="logo-icon">TNC</div>
-                    <div>
-                        <div class="logo-text-main">TNC English</div>
-                        <div class="logo-text-sub">Sổ tay từ vựng của riêng bạn</div>
-                    </div>
-                </div>
-
-                <div class="streak-pill">
-                    <span class="streak-dot"></span>
-                    <span id="streak-text">Chuỗi ngày học: <b>0 ngày</b></span>
-                </div>
-
-                <div class="nav">
-                <button class="nav-button active" onclick="showSection('vocab')">
-                📚 Từ vựng
-                </button>
-                <button class="nav-button" onclick="showSection('review')">
-                🧠 Ôn tập
-                </button>
-                <button class="nav-button" onclick="showSection('irregular')">
-                🔥 Động từ BQT
-                </button>
-                </div>
-
-                <div class="goal-card">
-                    <h3>Mục tiêu hôm nay</h3>
-                    <p>Thêm ít nhất <b>5 từ mới</b> và ôn lại từ đã lưu. Học đều mỗi ngày sẽ nhớ rất lâu 🔁</p>
-                    <div class="goal-chip-row">
-                        <span class="goal-chip">+3 từ đơn</span>
-                        <span class="goal-chip">+2 cụm từ</span>
-                        <span class="goal-chip">Ôn 10 từ cũ</span>
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="assets/logo.png" alt="Logo" class="logo-img">
+                        
+                    <div class="logo-info">
+                        <span class="logo-title">TNC English</span>
+                        <span class="logo-tag">Vocab Master</span>
                     </div>
                 </div>
             </div>
 
-            <div class="sidebar-bottom">
-                <div class="account-card">
-                    <div class="account-label">Tài khoản</div>
-                    <div class="user-pill" id="user-display">Chưa đăng nhập</div>
-                    <div class="account-actions">
-                        <button class="btn-ghost full-width" id="change-password-button">🔑 Đổi mật khẩu</button>
-                        <button class="btn-ghost full-width" onclick="showApiKeyModal()" style="font-size:11px;">
-                            ⚙️ Cấu hình AI
-                        </button>
-                        <button class="btn-ghost full-width" id="logout-button">🚪 Đăng xuất</button>
+            <nav class="nav">
+                <button class="nav-item active" onclick="showSection('vocab')">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">Từ vựng</span>
+                </button>
+                <button class="nav-item" onclick="showSection('review')">
+                    <span class="nav-icon">🧠</span>
+                    <span class="nav-text">Ôn tập</span>
+                </button>
+                <button class="nav-item" onclick="showSection('irregular')">
+                    <span class="nav-icon">🔥</span>
+                    <span class="nav-text">Động từ BQT</span>
+                </button>
+                <button class="nav-item" onclick="showSection('profile')">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">Hồ sơ</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="streak-card">
+                    <div class="streak-icon-box">🔥</div>
+                    <div class="streak-info">
+                        <div class="streak-label">Chuỗi ngày học</div>
+                        <div class="streak-number" id="sidebar-streak-val">0 ngày</div>
                     </div>
                 </div>
-
-                <div class="footer-note">
-                    Tip: Hãy tạo ví dụ liên quan tới <b>cuộc sống thực</b> (công việc, game, đồ ăn...) để nhớ lâu hơn ✨
-                </div>
+                
+                <div class="app-version">v1.2.0 • Made with ❤️</div>
             </div>
         </aside>
 
         <!-- MAIN -->
         <main class="main">
-            <header class="main-header">
-                <div>
-                    <div class="main-title">Sổ tay từ vựng</div>
-                    <div class="main-sub">
-                        Thêm – lưu – ôn lại từ vựng tiếng Anh.
-                    </div>
-                </div>
-                <div class="main-header-right">
-                    <div class="pill" id="total-count-pill">
-                        <span class="pill-dot"></span>
-                        <span>0 từ</span>
-                    </div>
-                    <button class="btn-ghost" id="reload-button">🔄 Tải lại danh sách</button>
-                </div>
-            </header>
-
             <!-- Thêm từ mới -->
             <section class="card">
+
+                
                 <div class="card-header-row">
                     <div>
                         <div class="card-title">Thêm từ mới</div>
+                        <button class="btn-bulk-ai" onclick="openBulkModal()">
+                                <span class="sparkle-icon">✨</span> Thêm hàng loạt (AI)
+                        </button>
                         <p class="card-description">
                             Điền đầy đủ thông tin hoặc dùng 🤖 AI để gợi ý
                         </p>
@@ -174,37 +150,55 @@
             </section>
 
             <!-- Danh sách từ -->
-            <section class="card">
+            <section class="card" id="list-card-section">
+                
                 <div class="card-header-row">
                     <div>
                         <div class="card-title">Danh sách từ vựng</div>
-                        <p class="card-description">
-                            Dữ liệu được load từ Danh sách. Có thể tìm kiếm, nghe phát âm, sửa / xóa.
-                        </p>
+                        <p class="card-description">Kho từ vựng cá nhân</p>
                     </div>
-                    <div>
-                        <input id="search-input" type="text"
-                               placeholder="🔍 Tìm Word / Meaning / Folder..."
-                               style="padding:6px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px;" />
+                    <div class="pill" style="background:#f3f4f6; color:#6b7280;">
+                        <span id="total-words-val">0</span> từ
                     </div>
                 </div>
-                 <div class="folder-filter-row" id="folder-filter-row"></div>
+
+                <div class="filter-toolbar">
+                    
+                    <div class="tools-left">
+                        <div class="search-wrapper compact">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="search-input" placeholder="Tìm kiếm..." autocomplete="off">
+                            <button id="clear-search" class="clear-icon" style="display:none;">&times;</button>
+                        </div>
+                        <button id="reload-button" class="mini-btn icon-only" title="Tải lại">
+                            🔄
+                        </button>
+                        <div style="width:1px; height:24px; background:#e5e7eb; margin:0 4px;"></div>
+                    </div>
+
+                    <div id="folder-filter-row" class="folder-scroll-row">
+                        </div>
+
+                </div>
+                
                 <div class="word-list" id="word-list">
                     <div class="word-row word-header">
-                        <div>Word</div>
-                        <div>IPA</div>
-                        <div>Meaning</div>
-                        <div>Sentence</div>
-                        <div>Type</div>
-                        <div>Folder</div>
-                        <div>Actions</div>
+                        <div style="flex:1.5;">Word</div>
+                        <div style="flex:1;">IPA</div>
+                        <div style="flex:2;">Meaning</div>
+                        <div style="flex:2;">Sentence</div>
+                        <div style="flex:0.8;">Type</div>
+                        <div style="flex:1;">Folder</div>
+                        <div style="width:90px;">Actions</div>
                     </div>
+                    
                     <div class="word-empty" id="word-empty">
-                        Chưa có từ nào hoặc chưa load được dữ liệu.
-                        Hãy bấm "Tải lại" hoặc thêm từ mới.
+                        Chưa có từ nào. Hãy bấm "Tải lại" hoặc thêm từ mới.
                     </div>
                 </div>
+
                 <div class="pagination" id="pagination"></div>
+
             </section>
         <section id="review-section" class="card" style="display:none;">
             
@@ -342,6 +336,75 @@
                 <div>Kết quả tra cứu sẽ hiện tại đây</div>
             </div>
         </section>
+
+        <section id="profile-section" class="card" style="display:none; border:none; background:transparent; padding:0; box-shadow:none;">
+            
+            <div class="profile-header-card">
+                <div class="profile-avatar">👤</div>
+                <div class="profile-info">
+                    <div class="profile-name" id="user-display">Đang tải...</div>
+                    <div class="profile-email" id="user-email-sub">...</div>
+                    <div id="account-status-badge" style="margin-top:6px;">
+                        </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-val" id="streak-count-val">0</div>
+                    <div class="stat-label">Chuỗi ngày (Streak)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-val" id="total-words-val">0</div>
+                    <div class="stat-label">Tổng từ vựng</div>
+                </div>
+            </div>
+
+            <div class="settings-list">
+                <div class="setting-item" onclick="showApiKeyModal()">
+                    <div class="setting-left">
+                        <span class="setting-icon" style="background:#eef2ff; color:#4f46e5;">🤖</span>
+                        <div>
+                            <div class="setting-title">Cấu hình Gemini AI</div>
+                            <div class="setting-sub">Nhập API Key để dùng tính năng gợi ý</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#6b7280;">ᐳ</div>
+                </div>
+
+                <div class="setting-item" onclick="openChangePwModal()">
+                    <div class="setting-left">
+                        <span class="setting-icon" style="background:#fff7ed; color:#ea580c;">🔑</span>
+                        <div>
+                            <div class="setting-title">Đổi mật khẩu</div>
+                            <div class="setting-sub">Cập nhật mật khẩu bảo vệ tài khoản</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#6b7280;">ᐳ</div>
+                </div>
+                
+                <div class="setting-item" onclick="window.location.href='https://zalo.me/g/vggdoi022'">
+                    <div class="setting-left">
+                        <span class="setting-icon" style="background:#f0fdf4; color:#16a34a;">💬</span>
+                        <div>
+                            <div class="setting-title">Hỗ trợ / Liên hệ Admin</div>
+                            <div class="setting-sub">Gia hạn, báo lỗi, góp ý tính năng</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#6b7280;">↗</div>
+                </div>
+            </div>
+
+            <button id="logout-button" class="btn-logout-big">
+                🚪 Đăng xuất tài khoản
+            </button>
+            
+            <div style="text-align:center; margin-top:20px; font-size:11px; color:#9ca3af;">
+                Phiên bản 1.2.0 • TNC English
+            </div>
+        </section>
         </main>
     </div>
 </div>
@@ -464,51 +527,64 @@
     <span id="toast-loading-text">Đang tải dữ liệu...</span>
 </div>
 
-<div id="premium-modal" class="modal-backdrop" style="display:none; z-index: 999999;">
-    <div class="modal-card" style="width: 380px; border-top: 4px solid #ef4444; position:relative;">
+<div id="premium-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card-premium">
+        <button onclick="closePremiumPopup()" class="close-btn">✕</button>
 
-        <button onclick="closePremiumPopup()" style="position:absolute; top:10px; right:10px; border:none; background:none; font-size:20px; cursor:pointer; color:#9ca3af;">✕</button>
-        <div style="text-align:center;">
-            <div style="font-size: 48px; margin-bottom: 4px;">⌛</div>
-            <div class="modal-title" style="color:#b91c1c;">Tài khoản hết hạn</div>
-            <p class="modal-sub">
-                Hạn sử dụng: <b id="session-expired-date" style="color:#b91c1c;">...</b>
-            </p>
+        <div class="premium-header">
+            <span class="premium-icon">⌛</span>
+            <h3 class="premium-title">Tài khoản hết hạn</h3>
+            <p class="premium-sub">Hạn sử dụng: <span id="session-expired-date">...</span></p>
         </div>
-        
-        <div class="payment-box">
-            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:4px;">Gia hạn ngay để tiếp tục học</div>
-            <span class="price-tag">35.000đ <small style="font-size:14px; font-weight:500; color:#64748b;">/ tháng</small></span>
+
+        <div class="pricing-container">
+            <div class="plan-box plan-month">
+                <div class="plan-name">Theo tháng</div>
+                <div class="plan-price">35.000đ</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">/ 1 tháng</div>
+            </div>
+
+            <div class="plan-box plan-lifetime">
+                <div class="badge-best">TIẾT KIỆM NHẤT</div>
+                <div class="plan-name">Trọn đời</div>
+                <div class="plan-price">150.000đ</div>
+                <div class="plan-desc">Dùng vĩnh viễn</div>
+            </div>
+        </div>
+
+        <div class="payment-details">
+            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:8px;">
+                Quét mã hoặc chuyển khoản theo thông tin:
+            </div>
             
-            <div class="bank-info">
+            <div class="bank-card">
                 <div class="bank-row">
                     <span class="bank-label">Ngân hàng:</span>
-                    <span class="bank-value">TPBank</span>
+                    <span class="bank-val" style="color:#6366f1;">TPBank</span>
                 </div>
                 <div class="bank-row">
                     <span class="bank-label">Chủ TK:</span>
-                    <span class="bank-value">TRAN NGOC CUONG</span>
+                    <span class="bank-val">TRAN NGOC CUONG</span>
                 </div>
-                <div class="bank-row" style="border:none;">
+                <div class="bank-row">
                     <span class="bank-label">Số TK:</span>
-                    <span class="bank-value" style="color:#0f172a; font-size:15px;">04312089999</span>
+                    <span class="bank-val" style="font-size: 15px; letter-spacing: 0.5px;">04312089999</span>
                 </div>
-            </div>
-
-            <div style="margin-top:12px; font-size:11px; text-align:center; color:#64748b;">Nội dung CK:</div>
-            <div class="transfer-syntax">VOCAB [EMAIL_CUA_BAN]</div>
-            <div class="legal-note">
-                ⚠️ <b>Lưu ý:</b> Đây là trang web học tập cá nhân. Khoản phí trên chỉ được sử dụng để chi trả chi phí máy chủ, API AI và bảo dưỡng hệ thống kỹ thuật. Chúng tôi không kinh doanh vì lợi nhuận và cam kết tuân thủ đúng quy định pháp luật hiện hành.
+                
+                <div style="margin-top:12px; font-size:11px; color:#64748b; text-align: center;">Nội dung chuyển khoản (Bắt buộc):</div>
+                <div class="copy-syntax">VOCAB [EMAIL_CUA_BAN]</div>
             </div>
         </div>
 
-        <div class="contact-admin" style="text-align:center;">
-             Liên hệ Admin qua Zalo: <b>0946415092</b> để kích hoạt lại.
+        <div class="modal-footer">
+            <div class="legal-text">
+                ⚠️ <b>Lưu ý:</b> Khoản phí trên dùng để duy trì máy chủ, API AI và bảo dưỡng hệ thống. Chúng tôi không kinh doanh vì lợi nhuận và tuân thủ pháp luật. Liên hệ Zalo: <b>0946415092</b> nếu cần hỗ trợ.
+            </div>
+            
+            <button id="force-logout-btn" class="btn-logout">
+                Đăng xuất & Kích hoạt lại
+            </button>
         </div>
-
-        <button id="force-logout-btn" class="btn-primary" style="width:100%; margin-top:16px; background:#dc2626;">
-            Đăng xuất để kích hoạt
-        </button>
     </div>
 </div>
 <!-- confetti-->
@@ -553,9 +629,9 @@
 
 <div id="global-loader">
     <div class="loader-content">
-        <div class="loader-icon">📚</div>
+        <div class="loader-icon"><img src="assets/logo.png" alt="Logo" class="logo-img"></div>
         
-        <div class="loader-title">Vocab Master</div>
+        <div class="loader-title">TNC ENGLISH</div>
         
         <div class="tip-container">
             <div class="tip-label">💡 MẸO GHI NHỚ:</div>
@@ -564,6 +640,68 @@
 
         <div class="progress-container">
             <div class="progress-bar" id="loader-progress"></div>
+        </div>
+    </div>
+</div>
+<div id="bulk-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card" style="width: 600px; max-width:95%; padding: 0; overflow: hidden;">
+        
+        <div class="modal-header-modern">
+            <h3 class="modal-title-text">⚡ Thêm từ nhanh (qua Gemini Gem)</h3>
+            
+        </div>
+        
+        <div class="modal-body-modern">
+            
+            <div class="step-box-1">
+                <div class="step-label">BƯỚC 1: Lấy dữ liệu</div>
+                <p class="step-desc">
+                    Click nút dưới để mở Gem. Nhập danh sách từ cần học vào đó, sau đó <b>Copy đoạn mã JSON</b> nó trả về.
+                </p>
+                <a href="https://gemini.google.com/gem/1UHLDMzZ-9GDY1dRo24ZAahyPCPiwzo9W?usp=sharing" 
+                   target="_blank" 
+                   class="btn-gemini-link">
+                    🚀 Mở Gemini Gem của tôi ↗️
+                </a>
+            </div>
+
+            <div class="step-box-2">
+                <div class="step-label-dark">BƯỚC 2: Dán kết quả JSON vào đây</div>
+                
+                <div class="textarea-wrapper">
+                    <textarea id="json-paste-area" 
+                        class="modern-textarea" 
+                        placeholder='Ví dụ: [{"word":"hello", "meaning":"xin chào"...}]'
+                        spellcheck="false"
+                        oninput="autoCheckJson()"></textarea>
+                    <div id="json-status" class="validation-status"></div>
+                </div>
+                <div id="bulk-preview-area" style="display:none; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div style="font-weight:700; color:#374151;">Danh sách từ (<span id="preview-count">0</span>)</div>
+                        
+                        <div style="position:relative;">
+                            <input type="text" id="bulk-search-input" 
+                                placeholder="🔍 Lọc từ..." 
+                                oninput="filterBulkPreview()"
+                                style="padding: 6px 12px; border:1px solid #d1d5db; border-radius: 6px; font-size:13px; width: 180px;">
+                        </div>
+                    </div>
+
+                    <div id="bulk-list-container" class="bulk-list-scroll">
+                        </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer-modern">
+            <button class="btn-ghost-gray" onclick="closeBulkModal()">Đóng</button>
+            <button class="btn-primary-save" id="btn-process-json" onclick="processAndSaveBulk()" disabled>
+                💾 Lưu danh sách
+            </button>
         </div>
     </div>
 </div>

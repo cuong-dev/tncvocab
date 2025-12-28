@@ -16,6 +16,7 @@ let currentUser = null;
 let editingIndex = -1;
 let activeFolder = null;      // null = chưa chọn folder
 let currentFolderNames = []; 
+let bulkData = []; // Biến chứa dữ liệu tạm thời
 
 const PAGE_SIZE = 10;   // mỗi trang 10 từ
 let currentPage = 1;
@@ -211,6 +212,16 @@ if (logoutButton) {
     });
 }
 
+function openAccountModalMobile() {
+    // Logic: Nếu trên mobile thì hiện modal thông tin user, hoặc logout
+    // Đơn giản nhất là hỏi đăng xuất hoặc đổi mật khẩu
+    if(confirm("Bạn muốn đăng xuất? (Nhấn OK để đăng xuất, Cancel để đóng)")) {
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+        window.location.href = "login.html";
+    }
+}
+
 // ===== ĐỔI MẬT KHẨU =====
 function openChangePwModal() {
     if (!currentUser || !currentUser.email) {
@@ -282,9 +293,10 @@ async function fetchWordsFromSheet() {
 
 // ===== SEND VOCAB TO SHEET =====
 function sendWordToGoogleSheet_Add(word) {
-    if (!currentUser || !currentUser.email) {
-        alert("Chưa đăng nhập, không thể lưu từ.");
-        return;
+    // Kiểm tra đăng nhập (giữ nguyên)
+    if (typeof currentUser === 'undefined' || !currentUser || !currentUser.email) {
+        showToast("Chưa đăng nhập, không thể lưu từ.", "error");
+        return Promise.reject("Chưa đăng nhập"); // Trả về lỗi để bên ngoài biết
     }
 
     const payload = {
@@ -293,7 +305,8 @@ function sendWordToGoogleSheet_Add(word) {
         action: "add"
     };
 
-    fetch(SHEET_WEB_APP_URL, {
+    // Thêm return vào đây để bên ngoài chờ được (await)
+    return fetch(SHEET_WEB_APP_URL, {
         method: "POST",
         mode: "cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -302,19 +315,25 @@ function sendWordToGoogleSheet_Add(word) {
     .then(res => res.json())
     .then(data => {
         if (data.status === "success" && data.rowIndex) {
+            // Logic cập nhật rowIndex cho từ vừa thêm
+            // Lưu ý: Logic này giả định từ mới nằm cuối mảng (words[length-1])
+            // Nếu bạn dùng unshift (thêm lên đầu), cần sửa chỗ này. 
+            // Tuy nhiên để an toàn cho hàm cũ, ta tạm giữ nguyên.
             const last = words[words.length - 1];
-            if (last && last.rowIndex == null) {
+            if (last && last.word === word.word && last.rowIndex == null) {
                 last.rowIndex = data.rowIndex;
             }
-            showToast("Đã lưu từ mới ", "success");
+            // Không show toast ở đây nữa để tránh spam thông báo khi thêm hàng loạt
+            // showToast("Đã lưu từ mới", "success"); 
+            return data; // Trả về data
         } else {
-            console.warn("Gửi  (add) lỗi:", data);
-            showToast("Lưu từ mới lên  bị lỗi", "error");
+            console.warn("Gửi (add) lỗi:", data);
+            throw new Error(data.message || "Lỗi server");
         }
     })
     .catch(err => {
         console.error("POST add error:", err);
-        showToast("Không kết nối được ", "error");
+        throw err;
     });
 }
 
@@ -395,9 +414,15 @@ function renderFolderFilters() {
 
     folderFilterRow.innerHTML = "";
 
-    // 1. Tính toán số lượng
+    // Helper: Lấy từ khóa tìm kiếm an toàn (tránh lỗi null)
+    const getSearchTerm = () => {
+        const el = document.getElementById("search-input");
+        return el ? el.value : "";
+    };
+
+    // Tính toán số lượng cho từng folder
     const counts = {};
-    let noFolderCount = 0; // Đếm số từ chưa có folder
+    let noFolderCount = 0;
     let totalCount = words.length;
 
     words.forEach(w => {
@@ -409,132 +434,159 @@ function renderFolderFilters() {
         }
     });
 
-    // 2. Nút "Tất cả"
-    const allLabel = `Tất cả (${totalCount})`;
-    const allBtn = document.createElement("button");
-    allBtn.type = "button";
-    allBtn.textContent = allLabel;
-    allBtn.className = "folder-pill" + (activeFolder === "ALL" || activeFolder === null ? " active" : ""); 
-    // Mặc định activeFolder là 'ALL' hoặc null thì sáng nút này
-    
-    allBtn.addEventListener("click", () => {
-        activeFolder = "ALL";
-        currentPage = 1;
-        renderFolderFilters();
-        renderWords(searchInput.value);
-    });
-    folderFilterRow.appendChild(allBtn);
-
-    // 3. Nút "Chưa phân loại" (Chỉ hiện nếu có từ)
-    if (noFolderCount > 0) {
-        const noFolderBtn = document.createElement("button");
-        noFolderBtn.type = "button";
-        noFolderBtn.innerHTML = `📂 Chưa phân loại (${noFolderCount})`; // Dùng icon cho dễ nhìn
-        noFolderBtn.className = "folder-pill" + (activeFolder === "_NO_FOLDER_" ? " active" : "");
-        
-        noFolderBtn.addEventListener("click", () => {
-            activeFolder = "_NO_FOLDER_"; // Đặt mã đặc biệt
-            currentPage = 1;
-            renderFolderFilters();
-            renderWords(searchInput.value);
-        });
-        folderFilterRow.appendChild(noFolderBtn);
-    }
-
-    // 4. Các nút Folder khác
-    currentFolderNames.forEach(folderName => {
-        const count = counts[folderName] || 0;
-        const label = `${folderName} (${count})`;
-
+    // --- Helper tạo nút ---
+    const createBtn = (label, isActive, onClick) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.textContent = label;
-        btn.className = "folder-pill" + (activeFolder === folderName ? " active" : "");
-        btn.addEventListener("click", () => {
+        btn.className = "folder-pill" + (isActive ? " active" : "");
+        btn.addEventListener("click", onClick);
+        return btn;
+    };
+
+    // 1. Nút "Tất cả"
+    const isAllActive = (activeFolder === "ALL" || activeFolder === null);
+    folderFilterRow.appendChild(createBtn(`Tất cả (${totalCount})`, isAllActive, () => {
+        activeFolder = "ALL";
+        currentPage = 1; 
+        renderFolderFilters(); 
+        
+        // SỬA LỖI TẠI ĐÂY: Dùng hàm getSearchTerm() thay vì searchInput.value
+        renderWords(getSearchTerm());
+    }));
+
+    // 2. Nút "Chưa phân loại"
+    if (noFolderCount > 0) {
+        const isNoFolderActive = (activeFolder === "_NO_FOLDER_");
+        folderFilterRow.appendChild(createBtn(`📂 Chưa phân loại (${noFolderCount})`, isNoFolderActive, () => {
+            activeFolder = "_NO_FOLDER_";
+            currentPage = 1;
+            renderFolderFilters();
+            
+            // SỬA LỖI TẠI ĐÂY
+            renderWords(getSearchTerm());
+        }));
+    }
+
+    // 3. Các folder khác
+    currentFolderNames.forEach(folderName => {
+        const count = counts[folderName] || 0;
+        const isActive = (activeFolder === folderName);
+        folderFilterRow.appendChild(createBtn(`${folderName} (${count})`, isActive, () => {
             activeFolder = folderName;
             currentPage = 1;
             renderFolderFilters();
-            renderWords(searchInput.value);
-        });
-        folderFilterRow.appendChild(btn);
+            
+            // SỬA LỖI TẠI ĐÂY
+            renderWords(getSearchTerm());
+        }));
     });
 }
-
 function renderPagination(totalPages, totalItems) {
     if (!paginationEl) return;
 
     paginationEl.innerHTML = "";
 
+    // Helper: Lấy từ khóa tìm kiếm an toàn
+    const getSearchTerm = () => {
+        const el = document.getElementById("search-input");
+        return el ? el.value : "";
+    };
+
     if (totalPages <= 1) {
-        return; // không cần phân trang
+        const info = document.createElement("span");
+        info.className = "page-info";
+        info.textContent = `Hiển thị toàn bộ ${totalItems} từ`;
+        paginationEl.appendChild(info);
+        return; 
     }
 
+    // Thông tin trang
     const info = document.createElement("span");
     info.className = "page-info";
-    info.textContent = `Trang ${currentPage}/${totalPages} – ${totalItems} từ`;
+    info.textContent = `Trang ${currentPage}/${totalPages} – Tổng ${totalItems} từ`;
     paginationEl.appendChild(info);
 
+    // Nút Previous (<)
     const prevBtn = document.createElement("button");
     prevBtn.type = "button";
     prevBtn.textContent = "‹";
     prevBtn.className = "page-btn";
     prevBtn.disabled = currentPage === 1;
-    prevBtn.addEventListener("click", () => {
+    
+    prevBtn.onclick = () => {
         if (currentPage > 1) {
             currentPage--;
-            renderWords(searchInput.value);
+            // SỬA LỖI TẠI ĐÂY: Gọi hàm lấy text an toàn
+            renderWords(getSearchTerm());
+            
+            const listEl = document.getElementById("word-list");
+            if(listEl) listEl.scrollIntoView({behavior: "smooth", block: "start"});
         }
-    });
+    };
     paginationEl.appendChild(prevBtn);
 
+    // Nút Next (>)
     const nextBtn = document.createElement("button");
     nextBtn.type = "button";
     nextBtn.textContent = "›";
     nextBtn.className = "page-btn";
     nextBtn.disabled = currentPage >= totalPages;
-    nextBtn.addEventListener("click", () => {
+    
+    nextBtn.onclick = () => {
         if (currentPage < totalPages) {
             currentPage++;
-            renderWords(searchInput.value);
+            // SỬA LỖI TẠI ĐÂY: Gọi hàm lấy text an toàn
+            renderWords(getSearchTerm());
+            
+            const listEl = document.getElementById("word-list");
+            if(listEl) listEl.scrollIntoView({behavior: "smooth", block: "start"});
         }
-    });
+    };
     paginationEl.appendChild(nextBtn);
 }
 
 function renderUserStatus() {
-    const userPill = document.getElementById("user-display");
-    if (!userPill || !currentUser) return;
+    // Không còn dùng user-pill ở sidebar nữa, ta target vào các ID trong Profile Tab
+    const nameEl = document.getElementById("user-display");
+    const emailEl = document.getElementById("user-email-sub");
+    const badgeEl = document.getElementById("account-status-badge");
 
-    let tagHtml = "";
-    let borderColor = "#e5e7eb"; // Màu viền mặc định của nút User
+    if (!currentUser) return;
 
-    // LOGIC XÁC ĐỊNH TRẠNG THÁI
+    // 1. Tên và Email
+    const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : "User");
+    if (nameEl) nameEl.textContent = displayName;
+    if (emailEl) emailEl.textContent = currentUser.email || "";
+
+    // 2. Trạng thái (VIP/Trial/Expired)
+    let badgeHtml = "";
     if (!isPaidExpired()) {
-        tagHtml = `<span class="status-tag tag-active">VIP</span>`; // Viết tắt cho gọn
-        borderColor = "#10b981"; 
-        userPill.style.background = "#f0fdf4"; // Nền xanh rất nhạt
+        badgeHtml = `<span class="status-tag tag-active" style="font-size:12px; padding:4px 8px;">✨ Tài khoản VIP</span>`;
     } else if (isTrialActive()) {
-        tagHtml = `<span class="status-tag tag-trial">Trial</span>`; // Viết tắt
-        borderColor = "#f59e0b"; 
-        userPill.style.background = "#fffbeb"; 
+        const left = getTrialRemainingTime();
+        badgeHtml = `<span class="status-tag tag-trial" style="font-size:12px; padding:4px 8px;">⚡ Dùng thử: ${left}</span>`;
     } else {
-        tagHtml = `<span class="status-tag tag-expired">Hết Hạn</span>`; // Viết tắt
-        borderColor = "#ef4444"; 
-        userPill.style.background = "#fef2f2";
+        badgeHtml = `<span class="status-tag tag-expired" style="font-size:12px; padding:4px 8px;">⛔ Hết hạn</span>`;
     }
 
-    // Hiển thị: Icon + Tên + Tag
-    // (currentUser.name ưu tiên, nếu không có lấy email)
-    const displayName = currentUser.email ? currentUser.email.split('@')[0] : "User";
-
-    userPill.innerHTML = `
-        <span style="font-size:16px;">👤</span> 
-        <span class="user-name-text" title="${displayName}">${displayName}</span> 
-        ${tagHtml}
-    `;
-    userPill.style.border = `1px solid ${borderColor}`;
+    if (badgeEl) badgeEl.innerHTML = badgeHtml;
 }
 
+function renderUserProfileData() {
+    renderUserStatus(); // Cập nhật header
+
+    // Cập nhật thống kê
+    const streakEl = document.getElementById("streak-count-val");
+    const totalEl = document.getElementById("total-words-val");
+
+    if (totalEl) totalEl.textContent = words.length;
+    
+    if (streakEl) {
+        const days = computeStreakDays(words);
+        streakEl.textContent = days;
+    }
+}
 function getTypeTagClass(type) {
     if (!type) return "tag-other";
     const t = type.toLowerCase();
@@ -551,9 +603,16 @@ function getStatusClass(status) {
 }
 
 function updateCount() {
-    if (!totalCountPill) return;
-    const span = totalCountPill.querySelector("span:last-child");
-    if (span) span.textContent = words.length + " từ";
+    // 1. Cập nhật số đếm ở Tab Profile (Mới)
+    const totalEl = document.getElementById("total-words-val");
+    if (totalEl) totalEl.textContent = words.length;
+
+    // 2. Cập nhật pill cũ (Nếu còn giữ html thì update, không thì thôi)
+    const pill = document.getElementById("total-count-pill");
+    if (pill) {
+        const span = pill.querySelector("span:last-child");
+        if (span) span.textContent = words.length + " từ";
+    }
 }
 
 // streak
@@ -585,15 +644,20 @@ function computeStreakDays(wordsArray) {
 }
 
 function updateStreak() {
-    if (!streakText) return;
-
+    // Tính toán streak
     const days = computeStreakDays(words);
-    let label;
-    if (days <= 0) label = "0 ngày";
-    else if (days === 1) label = "1 ngày";
-    else label = days + " ngày";
+    
+    // Cập nhật ở Sidebar Mới
+    const sidebarStreakEl = document.getElementById("sidebar-streak-val");
+    if (sidebarStreakEl) {
+        sidebarStreakEl.textContent = days + " ngày";
+    }
 
-    streakText.innerHTML = `Chuỗi ngày học: <b>${label}</b>`;
+    // Cập nhật ở Profile Tab (nếu có)
+    const profileStreakEl = document.getElementById("streak-count-val");
+    if (profileStreakEl) {
+        profileStreakEl.textContent = days;
+    }
 }
 
 // Speech
@@ -615,34 +679,51 @@ function playPronunciation(text) {
 // Edit mode
 function setEditMode(index) {
     editingIndex = index;
+
+    // Helper: Chỉ gán giá trị nếu ô input đó TỒN TẠI trên giao diện
+    const safeSet = (element, value) => {
+        if (element) {
+            element.value = value;
+        }
+    };
+
+    // --- TRƯỜNG HỢP 1: THOÁT CHẾ ĐỘ SỬA (RESET FORM) ---
     if (index < 0) {
         if (wordSubmitButton) wordSubmitButton.textContent = "+ Thêm vào Danh Sách";
         if (cancelEditButton) cancelEditButton.style.display = "none";
         if (editHint)         editHint.style.display = "none";
 
-        wordInput.value     = "";
-        meaningInput.value  = "";
-        folderInput.value   = "";
-        ipaInput.value      = "";
-        typeInput.value     = "";
-        sentenceInput.value = "";
-        statusSelect.value  = "new";
+        // Reset về rỗng
+        safeSet(wordInput, "");
+        safeSet(meaningInput, "");
+        safeSet(folderInput, "");
+        safeSet(ipaInput, "");
+        safeSet(typeInput, "");
+        safeSet(sentenceInput, "");
+        
+        // Dòng này sẽ không còn gây lỗi nếu bạn đã xóa ô status
+        safeSet(statusSelect, "new"); 
+        
         return;
     }
 
+    // --- TRƯỜNG HỢP 2: BẬT CHẾ ĐỘ SỬA (ĐIỀN DỮ LIỆU) ---
     const w = words[index];
     if (!w) return;
 
-    wordInput.value     = w.word || "";
-    meaningInput.value  = w.meaning || "";
-    folderInput.value   = w.folder || "";
-    ipaInput.value      = w.ipa || "";
-    typeInput.value     = w.type || "";
-    sentenceInput.value = w.sentence || "";
-    statusSelect.value  = w.status || "new";
+    // Điền dữ liệu cũ vào các ô (nếu ô đó còn tồn tại)
+    safeSet(wordInput, w.word || "");
+    safeSet(meaningInput, w.meaning || "");
+    safeSet(folderInput, w.folder || "");
+    safeSet(ipaInput, w.ipa || "");
+    safeSet(typeInput, w.type || "");
+    safeSet(sentenceInput, w.sentence || "");
+    safeSet(statusSelect, w.status || "new");
 
+    // Đổi nút bấm thành "Lưu"
     if (wordSubmitButton) wordSubmitButton.textContent = "💾 Lưu thay đổi";
     if (cancelEditButton) cancelEditButton.style.display = "inline-flex";
+    
     if (editHint) {
         editHint.style.display = "inline";
         editHint.textContent   = `Đang sửa từ: "${w.word}"`;
@@ -666,9 +747,14 @@ function isRecentWord(dateString) {
 
 // ✅ Render list có lọc folder + search, và ẩn khi chưa chọn folder
 function renderWords(filterText = "") {
+    // Xóa các dòng cũ (Giữ lại header ảo nếu có, nhưng CSS mobile đã ẩn header rồi)
+    // Cách an toàn nhất: Xóa hết con trừ header (nếu bạn dùng giao diện PC cũ)
+    // Hoặc xóa sạch và vẽ lại từ đầu nếu dùng giao diện Mobile Card toàn bộ.
+    
+    // Ở đây ta dùng logic: Giữ dòng đầu tiên (Header) nếu nó tồn tại
     const rows = Array.from(wordListEl.querySelectorAll(".word-row"));
     rows.forEach((row, index) => {
-        if (index === 0) return;
+        if (row.classList.contains("word-header")) return; // Bỏ qua header
         row.remove();
     });
 
@@ -700,25 +786,19 @@ function renderWords(filterText = "") {
         filtered.push({ w, index });
     });
 
-    // ============================================================
-    // 🔴 2. SẮP XẾP: ƯU TIÊN TỪ MỚI (3 NGÀY) LÊN ĐẦU
-    // ============================================================
+    // 2. SẮP XẾP: ƯU TIÊN TỪ MỚI (3 NGÀY) LÊN ĐẦU
     filtered.sort((a, b) => {
         const isNewA = isRecentWord(a.w.dateAdded);
         const isNewB = isRecentWord(b.w.dateAdded);
 
-        if (isNewA && !isNewB) return -1; // A mới -> A lên trước
-        if (!isNewA && isNewB) return 1;  // B mới -> B lên trước
-        
-        // Nếu cùng là mới hoặc cùng là cũ -> Giữ nguyên thứ tự gốc (mới thêm nằm dưới)
-        // Hoặc muốn đảo ngược (mới thêm lên đầu trong nhóm cũ) thì dùng: return b.index - a.index;
+        if (isNewA && !isNewB) return -1;
+        if (!isNewA && isNewB) return 1;
         return 0; 
     });
-    // ============================================================
-
 
     const totalItems = filtered.length;
 
+    // Xử lý khi trống
     if (totalItems === 0) {
         wordEmptyEl.style.display = "block";
         if (activeFolder === "_NO_FOLDER_") {
@@ -732,19 +812,22 @@ function renderWords(filterText = "") {
         wordEmptyEl.style.display = "none";
     }
 
-    // 3. PHÂN TRANG
+    // 3. PHÂN TRANG (Cắt mảng)
     const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
+    
+    // Bảo vệ: Nếu trang hiện tại lớn hơn tổng số trang (do lọc folder ít từ đi), reset về trang 1
+    if (currentPage > totalPages) currentPage = 1;
+
     const start = (currentPage - 1) * PAGE_SIZE;
     const end   = start + PAGE_SIZE;
     const pageItems = filtered.slice(start, end);
 
-    // 4. RENDER HTML
+    // 4. VẼ GIAO DIỆN (Loop)
     pageItems.forEach(({ w, index }) => {
         const row = document.createElement("div");
         row.className = "word-row";
 
-        // 1. Cột WORD (Giữ nguyên logic Badge NEW)
+        // Cột WORD + BADGE NEW
         const wordCell = document.createElement("div");
         let newBadgeHtml = "";
         if (isRecentWord(w.dateAdded)) {
@@ -755,34 +838,25 @@ function renderWords(filterText = "") {
             ${newBadgeHtml}
         `;
 
-        // 2. Cột IPA
         const ipaCell = document.createElement("div");
         ipaCell.textContent = w.ipa || "—";
 
-        // 3. Cột MEANING
         const meaningCell = document.createElement("div");
         meaningCell.textContent = w.meaning;
 
-        // 4. Cột SENTENCE
         const sentenceCell = document.createElement("div");
         sentenceCell.textContent = w.sentence || "—";
 
-        // 5. Cột TYPE
         const typeCell = document.createElement("div");
         const typeSpan = document.createElement("span");
         typeSpan.className = "tag-level " + getTypeTagClass(w.type);
         typeSpan.textContent = w.type || "—";
         typeCell.appendChild(typeSpan);
 
-        // 6. Cột FOLDER
         const folderCell = document.createElement("div");
         folderCell.textContent = w.folder || "—";
 
-        /* ❌ ĐÃ XÓA CỘT STATUS Ở ĐÂY 
-           (Không tạo statusCell và statusSpan nữa)
-        */
-
-        // 7. Cột ACTIONS
+        // CỘT ACTIONS
         const actionsCell = document.createElement("div");
         actionsCell.className = "word-actions";
 
@@ -799,30 +873,47 @@ function renderWords(filterText = "") {
         const delBtn = document.createElement("button");
         delBtn.textContent = "Xóa";
         delBtn.className = "mini-btn delete";
+        
+        // --- SỬA LẠI ĐOẠN ONCLICK NÀY ---
         delBtn.onclick = async () => {
             if(!checkAccess()) return;
+            
             if(confirm(`Xóa từ "${w.word}"?`)) {
                 try {
                     const data = await sendWordToGoogleSheet_Delete(index);
-                    if(data && data.status==="success") {
+                    if(data && data.status === "success") {
+                        // 1. Xóa khỏi mảng dữ liệu local
                         words.splice(index, 1);
-                        renderWords(searchInput.value);
+
+                        // 2. FIX LỖI: Lấy từ khóa tìm kiếm an toàn
+                        const searchEl = document.getElementById("search-input");
+                        const currentTerm = searchEl ? searchEl.value : "";
+                        
+                        // 3. Vẽ lại danh sách với từ khóa hiện tại
+                        renderWords(currentTerm);
+                        
                         updateCount();
                         updateFolderSuggestions(); 
                         showToast("Đã xóa từ", "success");
-                    } else showToast("Xóa thất bại", "error");
-                } catch(e) { console.error(e); showToast("Lỗi kết nối", "error"); }
+                    } else {
+                        showToast("Xóa thất bại", "error");
+                    }
+                } catch(e) { 
+                    console.error(e); 
+                    showToast("Lỗi kết nối", "error"); 
+                }
             }
         };
 
         actionsCell.append(soundBtn, editBtn, delBtn);
 
-        // LƯU Ý: Dòng append dưới đây KHÔNG còn biến statusCell nữa
+        // Append vào hàng (Đã bỏ cột Status)
         row.append(wordCell, ipaCell, meaningCell, sentenceCell, typeCell, folderCell, actionsCell);
         
         wordListEl.appendChild(row);
     });
 
+    // 5. GỌI HÀM VẼ PHÂN TRANG
     renderPagination(totalPages, totalItems);
 }
 // ===== AI – GỌI GEMINI =====
@@ -917,95 +1008,138 @@ function closeAiModal() {
 if (wordForm) {
     wordForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if (!checkAccess()) return;
-        const word     = (wordInput.value || "").trim();
-        const meaning  = (meaningInput.value || "").trim();
-        const folder   = (folderInput.value || "").trim();
-        const ipa      = (ipaInput.value || "").trim();
-        const type     = (typeInput.value || "").trim();
-        const status   = statusSelect.value || "new";
-        const sentence = (sentenceInput.value || "").trim();
+
+        // 1. LẤY DỮ LIỆU AN TOÀN (Tránh lỗi null)
+        const getVal = (el) => el ? el.value.trim() : "";
+        
+        const word     = getVal(wordInput);
+        const meaning  = getVal(meaningInput);
+        const folder   = getVal(folderInput);
+        const ipa      = getVal(ipaInput);
+        const type     = getVal(typeInput);
+        const sentence = getVal(sentenceInput);
+
+        // XỬ LÝ STATUS THÔNG MINH:
+        // Nếu có ô chọn (statusSelect) thì lấy giá trị.
+        // Nếu không có:
+        //   - Đang thêm mới -> mặc định 'new'
+        //   - Đang sửa -> giữ nguyên status cũ
+        let status = "new";
+        if (typeof statusSelect !== 'undefined' && statusSelect) {
+            status = statusSelect.value;
+        } else if (editingIndex >= 0 && words[editingIndex]) {
+            status = words[editingIndex].status; // Giữ status cũ
+        }
 
         if (!word || !meaning) {
             showToast("Vui lòng nhập từ và nghĩa", "error");
             return;
         }
-// ============================================================
-        // 🔴 THÊM ĐOẠN CHECK TRÙNG LẶP Ở ĐÂY
+
         // ============================================================
-        
-        const inputLower = word.toLowerCase(); // Chuyển về chữ thường để so sánh
+        // 🔴 CHECK TRÙNG LẶP (Code của bạn đã được tối ưu)
+        // ============================================================
+        const inputLower = word.toLowerCase(); 
 
         const isDuplicate = words.some((w, index) => {
-            // Nếu đang ở chế độ Sửa (editingIndex >= 0)
-            // thì bỏ qua chính từ đang sửa (index === editingIndex)
-            if (editingIndex >= 0 && index === editingIndex) {
-                return false; 
-            }
-            // So sánh từ (word) trong danh sách với từ mới nhập
+            // Nếu đang sửa, bỏ qua chính nó
+            if (editingIndex >= 0 && index === editingIndex) return false;
+            
+            // So sánh
             return (w.word || "").toLowerCase() === inputLower;
         });
 
         if (isDuplicate) {
-            showToast(`Từ "${word}" đã có trong danh sách rồi!`, "error");
+            showToast(`Từ "${word}" đã có trong danh sách!`, "error");
             
-            // Hiệu ứng cảnh báo: Rung lắc hoặc đỏ ô input
-            wordInput.focus();
-            wordInput.style.borderColor = "#ef4444"; // Viền đỏ
-            wordInput.style.backgroundColor = "#fef2f2"; // Nền đỏ nhạt
-            
-            // Trả lại màu bình thường sau 2 giây
-            setTimeout(() => {
-                wordInput.style.borderColor = "";
-                wordInput.style.backgroundColor = "";
-            }, 2000);
-
-            return; // ⛔ DỪNG NGAY, KHÔNG LƯU NỮA
+            // Hiệu ứng cảnh báo
+            if(wordInput) {
+                wordInput.focus();
+                wordInput.style.borderColor = "#ef4444";
+                wordInput.style.backgroundColor = "#fef2f2";
+                setTimeout(() => {
+                    wordInput.style.borderColor = "";
+                    wordInput.style.backgroundColor = "";
+                }, 2000);
+            }
+            return; // ⛔ DỪNG
         }
+        // ============================================================
 
-        // ============================================================
-        // KẾT THÚC ĐOẠN CHECK TRÙNG
-        // ============================================================
+        // Tạo object từ mới
         const newWord = { word, meaning, folder, ipa, type, sentence, status };
+        
+        // Helper: Lấy từ khóa tìm kiếm an toàn
+        const getCurrentSearch = () => {
+            const el = document.getElementById("search-input");
+            return el ? el.value : "";
+        };
 
+        // --- TRƯỜNG HỢP 1: THÊM MỚI ---
         if (editingIndex < 0) {
             const now = new Date();
-            const localDate = now.toISOString().slice(0, 10); // yyyy-MM-dd
+            const localDate = now.toISOString().slice(0, 10); 
 
+            // Cập nhật local
             words.push({
                 rowIndex : null,
                 ...newWord,
-                dateAdded: localDate   // dùng để tính streak tạm thời
+                dateAdded: localDate 
             });
-            renderWords(searchInput.value);
+
+            // Gửi Server
+            sendWordToGoogleSheet_Add(newWord);
+
+            // Cập nhật UI
+            renderWords(getCurrentSearch());
             updateCount();
             updateStreak();
             updateFolderSuggestions();
-            sendWordToGoogleSheet_Add(newWord);
-            setEditMode(-1);
-        } else {
+            
+            // Reset form
+            setEditMode(-1); 
+            showToast(`Đã thêm từ: ${word}`, "success");
+
+        } 
+        // --- TRƯỜNG HỢP 2: SỬA TỪ ---
+        else {
+            // Giữ lại ngày thêm cũ
+            newWord.dateAdded = words[editingIndex].dateAdded;
+
             try {
+                // Đổi nút bấm thành đang lưu
+                if(wordSubmitButton) {
+                    wordSubmitButton.textContent = "⏳ Đang lưu...";
+                    wordSubmitButton.disabled = true;
+                }
+
                 const data = await sendWordToGoogleSheet_Update(editingIndex, newWord);
+                
                 if (data && data.status === "success") {
-                    const old = words[editingIndex];
-                    words[editingIndex] = { ...old, ...newWord };
-                    renderWords(searchInput.value);
-                    setEditMode(-1);
+                    // Cập nhật local
+                    words[editingIndex] = { ...words[editingIndex], ...newWord };
+                    
+                    renderWords(getCurrentSearch());
                     updateFolderSuggestions();
-                    showToast("Đã cập nhật từ ", "success");
+                    setEditMode(-1); // Thoát chế độ sửa
+                    
+                    showToast("Cập nhật thành công!", "success");
                 } else {
-                    alert(data && data.message ? data.message : "Cập nhật thất bại");
-                    showToast("Cập nhật từ thất bại", "error");
+                    showToast("Lỗi Server (không lưu được)", "error");
                 }
             } catch (err) {
                 console.error("Update error:", err);
-                alert("Lỗi khi cập nhật từ.");
-                showToast("Lỗi khi cập nhật từ", "error");
+                showToast("Lỗi kết nối mạng", "error");
+            } finally {
+                // Trả lại nút bấm (nếu setEditMode chưa reset)
+                if(wordSubmitButton) {
+                    wordSubmitButton.disabled = false;
+                    if(editingIndex >= 0) wordSubmitButton.textContent = "💾 Lưu thay đổi";
+                }
             }
         }
     });
 }
-
 if (cancelEditButton) {
     cancelEditButton.addEventListener("click", () => {
         setEditMode(-1);
@@ -1267,41 +1401,53 @@ let pendingMode = "";      // Lưu tạm chế độ đang chọn (flashcard/fil
 
 // 1. Điều hướng Tab
 function showSection(sectionId) {
+    // Ẩn tất cả section
+    const sections = ['vocab', 'review', 'irregular', 'profile'];
     
-    const vocabSection = document.querySelector('section.card:nth-of-type(1)'); 
-    const listSection  = document.querySelector('section.card:nth-of-type(2)');
-    const reviewSection = document.getElementById('review-section');
-    const irregularSection = document.getElementById('irregular-section'); // <--- MỚI
+    // Lưu ý: Trong HTML cũ bạn đặt ID section hơi lộn xộn (cái thì ID, cái thì class nth-of-type).
+    // Tốt nhất bạn nên đặt ID rõ ràng cho từng section trong HTML:
+    // vocab-section, review-section, irregular-section, profile-section
+    
+    // Tạm thời ẩn theo cách cũ + thêm profile
+    const vocabSec = document.querySelector('section.card:nth-of-type(1)'); // Mục Thêm từ
+    const listSec  = document.querySelector('section.card:nth-of-type(2)'); // Mục Danh sách
+    const reviewSec = document.getElementById('review-section');
+    const irrSec    = document.getElementById('irregular-section');
+    const profileSec = document.getElementById('profile-section');
 
-    // Reset nút active
-    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+    if (vocabSec) vocabSec.style.display = 'none';
+    if (listSec)  listSec.style.display  = 'none';
+    if (reviewSec) reviewSec.style.display = 'none';
+    if (irrSec)    irrSec.style.display    = 'none';
+    if (profileSec) profileSec.style.display = 'none';
 
-    // Ẩn tất cả
-    if (vocabSection) vocabSection.style.display = 'none';
-    if (listSection) listSection.style.display = 'none';
-    if (reviewSection) reviewSection.style.display = 'none';
-    if (irregularSection) irregularSection.style.display = 'none';
+    // Xóa active class ở nav
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 
-    // Hiện tab được chọn
+    // Hiện section được chọn
     if (sectionId === 'vocab') {
-        if (vocabSection) vocabSection.style.display = 'block';
-        if (listSection) listSection.style.display = 'block';
-        document.querySelector('button[onclick="showSection(\'vocab\')"]').classList.add('active');
+        if (vocabSec) vocabSec.style.display = 'block';
+        if (listSec)  listSec.style.display  = 'block';
+        // Active nút đầu tiên
+        document.querySelector('.nav-item:nth-child(1)').classList.add('active');
     } 
     else if (sectionId === 'review') {
-        if (reviewSection) reviewSection.style.display = 'block';
-        document.querySelector('button[onclick="showSection(\'review\')"]').classList.add('active');
+        if (reviewSec) reviewSec.style.display = 'block';
         backToReviewMenu();
+        document.querySelector('.nav-item:nth-child(2)').classList.add('active');
     }
     else if (sectionId === 'irregular') {
-       if (irregularSection) irregularSection.style.display = 'block';
-        document.querySelector('button[onclick="showSection(\'irregular\')"]').classList.add('active');
+        if (irrSec) irrSec.style.display = 'block';
+        if (!isIrregularLoaded) fetchIrregularVerbsFromSheet(); 
+        document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+    }
+    else if (sectionId === 'profile') {
+        if (profileSec) profileSec.style.display = 'block';
+        // Active nút thứ 4
+        document.querySelector('.nav-item:nth-child(4)').classList.add('active');
         
-        // MỚI: Tự động tải dữ liệu từ Sheet khi bấm vào tab này lần đầu
-        fetchIrregularVerbsFromSheet(); 
-        
-        // Focus vào ô tìm kiếm cho tiện
-        setTimeout(() => document.getElementById("irregular-search-input").focus(), 300);
+        // Render lại UI Profile mỗi khi vào đây để đảm bảo data mới nhất
+        renderUserProfileData();
     }
 }
 
@@ -1653,19 +1799,61 @@ function nextScrambleQuestion() {
 // LOGIC DÙNG THỬ 24H & CHECK QUYỀN
 // ==========================================
 
-// Hàm kiểm tra xem tài khoản CHÍNH THỨC có hết hạn không
 function isPaidExpired() {
     if (!currentUser) return true;
-    const expiryStr = currentUser.expiryDate;
+    const expiryStr = currentUser.expiryDate; // Lấy từ cột B
     
-    // Nếu không có ngày hạn -> Coi như chưa kích hoạt gói trả phí
+    // Nếu không có ngày hạn -> Coi như chưa kích hoạt -> HẾT HẠN
     if (!expiryStr || expiryStr.trim() === "") return true;
 
-    const expiryDate = new Date(expiryStr);
-    const now = new Date();
-    expiryDate.setHours(23, 59, 59, 999);
+    try {
+        const expiryDate = new Date(expiryStr);
+        // Nếu định dạng ngày sai -> Coi như hết hạn để an toàn
+        if (isNaN(expiryDate.getTime())) return true;
+
+        const now = new Date();
+        // Cho phép dùng đến giây cuối cùng của ngày hết hạn
+        expiryDate.setHours(23, 59, 59, 999);
+        
+        return now > expiryDate;
+    } catch (e) {
+        return true;
+    }
+}
+
+function openPremiumModal() {
+    const modal = document.getElementById("premium-modal");
+    const dateEl = document.getElementById("session-expired-date");
+    const titleEl = document.querySelector(".premium-title"); // Tiêu đề modal
+
+    if (!modal || !dateEl) return;
+
+    const rawDate = currentUser ? (currentUser.expiryDate || "") : "";
+
+    // --- LOGIC HIỂN THỊ ---
     
-    return now > expiryDate;
+    if (!rawDate || rawDate.trim() === "") {
+        // TRƯỜNG HỢP 1: Cột B trống (Chưa từng gia hạn)
+        dateEl.textContent = "Chưa gia hạn";
+        dateEl.style.color = "#d97706"; // Màu vàng cam
+        if(titleEl) titleEl.textContent = "Kích hoạt tài khoản"; // Đổi tiêu đề cho hợp lý
+        
+    } else {
+        // TRƯỜNG HỢP 2: Đã có ngày (nhưng đã quá hạn)
+        try {
+            const dateObj = new Date(rawDate);
+            // Format ngày: 29/12/2025
+            dateEl.textContent = dateObj.toLocaleDateString('vi-VN'); 
+        } catch (e) {
+            dateEl.textContent = rawDate; // Fallback nếu lỗi format
+        }
+        
+        dateEl.style.color = "#b91c1c"; // Màu đỏ cảnh báo
+        if(titleEl) titleEl.textContent = "Tài khoản hết hạn";
+    }
+
+    // Hiện Modal
+    modal.style.display = "flex";
 }
 
 // Hàm kiểm tra xem có còn trong thời gian DÙNG THỬ (24h) không
@@ -1738,6 +1926,7 @@ function checkAccess() {
     }
 
     // 3. Hết cả trả phí lẫn dùng thử -> CHẶN
+    openPremiumModal();
     showPremiumPopup();
     return false;
 }
@@ -2480,34 +2669,47 @@ const SEASONAL_CONFIG = [
     { name: "HungKings",     month: 4,  day: 6,  icon: "🇻🇳", duration: 1 }, // Giỗ tổ (10/3 Âm - Ví dụ năm 2025 là 6/4 Dương)
 ];
 
-function initSeasonalEffects() {
+const PET_ASSETS = [
+    { 
+        src: "https://media.tenor.com/eXlIRe28PVgAAAAi/bubu-dudu-bubu.gif", 
+        type: "walk", width: 60 
+    },
+    { 
+        src: "https://media.tenor.com/rI_0O_9AJ5sAAAAj/nyan-cat-poptart-cat.gif", 
+        type: "fly", width: 80 
+    },
+    { 
+        src: "https://media.tenor.com/mlLioaWLTqYAAAAi/pikachu-running.gif", 
+        type: "walk", width: 70 
+    }
+];
+
+function initUnifiedEffects() {
     const today = new Date();
     const currentYear = today.getFullYear();
 
-    // 1. Tìm sự kiện đang diễn ra
+    // 1. Kiểm tra xem hôm nay có sự kiện gì không?
     const activeEvent = SEASONAL_CONFIG.find(event => {
-        // Tạo ngày sự kiện trong năm nay
         const eventDate = new Date(currentYear, event.month - 1, event.day);
         
-        // Tính ngày bắt đầu hiển thị (trước duration ngày)
         const startDate = new Date(eventDate);
         startDate.setDate(eventDate.getDate() - event.duration);
 
-        // Kiểm tra: Hôm nay có nằm giữa [Ngày bắt đầu] và [Ngày sự kiện] không?
-        // (Cộng thêm 1 ngày cho eventDate để tính cả chính ngày lễ)
         const endDate = new Date(eventDate);
         endDate.setDate(eventDate.getDate() + 1);
 
         return today >= startDate && today < endDate;
     });
 
-    // 2. Nếu có sự kiện -> Kích hoạt hiệu ứng
+    // 2. PHÂN LUỒNG XỬ LÝ
     if (activeEvent) {
-        console.log(`🎉 Đang diễn ra sự kiện: ${activeEvent.name}`);
+        // TRƯỜNG HỢP A: Có sự kiện -> Chạy hiệu ứng rơi
+        console.log(`🎉 Mode Lễ Hội: ${activeEvent.name}`);
         startFallingEffect(activeEvent.icon);
-        
-        // (Tùy chọn) Có thể đổi Logo tạm thời
-        // updateLogoForSeason(activeEvent.name);
+    } else {
+        // TRƯỜNG HỢP B: Ngày thường -> Chạy thú cưng
+        console.log("🐈 Mode Ngày Thường: Thả thú cưng");
+        startDailyPets();
     }
 }
 
@@ -2551,6 +2753,363 @@ function startFallingEffect(iconChar) {
     setInterval(createFlake, 300);
 }
 
+function startDailyPets() {
+    const MIN_INTERVAL = 4000;  
+    const MAX_INTERVAL = 10000; 
+    const PET_SPEED = 50; // Tăng tốc độ lên chút (50px/s) cho mượt
+
+    function spawnPet() {
+        // 1. Tìm Popup đang mở
+        const visibleModal = Array.from(document.querySelectorAll('.modal-backdrop')).find(el => {
+            return window.getComputedStyle(el).display !== 'none';
+        })?.querySelector('.modal-card');
+
+        // 2. Xác định vùng đi (Zone)
+        let zone = {
+            top: 0, left: 0, width: window.innerWidth, height: window.innerHeight, isPopup: false
+        };
+        if (visibleModal) {
+            const rect = visibleModal.getBoundingClientRect();
+            zone = { top: rect.top, left: rect.left, width: rect.width, height: rect.height, isPopup: true };
+        }
+
+        // 3. Tạo thú cưng
+        const petInfo = PET_ASSETS[Math.floor(Math.random() * PET_ASSETS.length)];
+        const pet = document.createElement("img");
+        pet.src = petInfo.src;
+        pet.className = "screen-pet";
+        
+        // 🔴 SỬA KÍCH THƯỚC: To hơn hẳn (1.0 -> 1.3 lần)
+        // Nếu ở popup thì to 1.0, màn hình chính thì 1.3
+        const scaleFactor = zone.isPopup ? 1.0 : 1.1; 
+        const baseSize = petInfo.width * scaleFactor;
+        pet.style.width = baseSize + "px";
+        
+        document.body.appendChild(pet);
+
+        // 4. Chọn cạnh ngẫu nhiên (0: Dưới, 1: Trên, 2: Trái, 3: Phải)
+        const edge = Math.floor(Math.random() * 4);
+        
+        let startX, startY, endX, endY, rotation;
+        let distance = 0;
+
+        switch (edge) {
+            case 0: // === CẠNH DƯỚI (Đi: Trái -> Phải) ===
+                startX = zone.left - baseSize;
+                startY = zone.top + zone.height - (zone.isPopup ? 5 : 0); 
+                endX   = zone.left + zone.width;
+                endY   = startY;
+                
+                // Mặt hướng sang Phải (Mặc định)
+                rotation = "scaleX(1)"; 
+                distance = zone.width + baseSize;
+                break;
+
+            case 1: // === CẠNH TRÊN (Đi: Phải -> Trái) ===
+                startX = zone.left + zone.width;
+                startY = zone.top - baseSize + (zone.isPopup ? 5 : 0);
+                endX   = zone.left - baseSize;
+                endY   = startY;
+                
+                // 🔴 SỬA LỖI LẬT NGƯỢC: 
+                // Chỉ lật ngang (scaleX -1) để mặt hướng sang Trái.
+                // Bỏ scaleY(-1) để không bị lộn đầu xuống đất.
+                rotation = "scaleX(-1)"; 
+                distance = zone.width + baseSize;
+                break;
+
+            case 2: // === CẠNH TRÁI (Đi: Trên -> Dưới) ===
+                startX = zone.left - baseSize + (zone.isPopup ? 10 : 0);
+                startY = zone.top - baseSize;
+                endX   = startX;
+                endY   = zone.top + zone.height;
+                
+                // Xoay 90 độ: Đầu cắm xuống đất
+                rotation = "rotate(90deg)"; 
+                distance = zone.height + baseSize;
+                break;
+
+            case 3: // === CẠNH PHẢI (Đi: Dưới -> Trên) ===
+                startX = zone.left + zone.width - (zone.isPopup ? 10 : 0);
+                startY = zone.top + zone.height;
+                endX   = startX;
+                endY   = zone.top - baseSize;
+                
+                // Xoay -90 độ: Đầu hướng lên trời
+                rotation = "rotate(-90deg)"; 
+                distance = zone.height + baseSize;
+                break;
+        }
+
+        // 5. Chạy Animation
+        pet.style.opacity = "1"; 
+        
+        // Thời gian = Quãng đường / Tốc độ
+        const duration = (distance / PET_SPEED) * 1000; 
+
+        const animation = pet.animate([
+            { transform: `translate(${startX}px, ${startY}px) ${rotation}` },
+            { transform: `translate(${endX}px, ${endY}px) ${rotation}` }
+        ], {
+            duration: duration,
+            easing: "linear",
+            fill: "forwards"
+        });
+
+        animation.onfinish = () => {
+            pet.remove();
+        };
+
+        const nextTime = Math.floor(Math.random() * (MAX_INTERVAL - MIN_INTERVAL) + MIN_INTERVAL);
+        setTimeout(spawnPet, nextTime);
+    }
+
+    spawnPet();
+}
+
+function openBulkModal() {
+    const modal = document.getElementById("bulk-modal");
+    if(modal) {
+        modal.style.display = "flex";
+        // Reset
+        document.getElementById("json-paste-area").value = "";
+        document.getElementById("json-status").textContent = "";
+        document.getElementById("bulk-preview-area").style.display = "none";
+        document.getElementById("btn-process-json").disabled = true;
+        bulkData = [];
+    }
+}
+
+function closeBulkModal() {
+    document.getElementById("bulk-modal").style.display = "none";
+}
+
+function autoCheckJson() {
+    const rawInput = document.getElementById("json-paste-area").value.trim();
+    const statusEl = document.getElementById("json-status");
+    const previewArea = document.getElementById("bulk-preview-area");
+    const saveBtn = document.getElementById("btn-process-json");
+
+    if (!rawInput) {
+        statusEl.textContent = "";
+        previewArea.style.display = "none";
+        saveBtn.disabled = true;
+        return;
+    }
+
+    try {
+        let cleanJson = rawInput.replace(/```json/g, "").replace(/```/g, "");
+        const firstBracket = cleanJson.indexOf('[');
+        const lastBracket = cleanJson.lastIndexOf(']');
+        
+        if (firstBracket !== -1 && lastBracket !== -1) {
+            cleanJson = cleanJson.substring(firstBracket, lastBracket + 1);
+        }
+
+        const data = JSON.parse(cleanJson);
+
+        if (Array.isArray(data) && data.length > 0) {
+            // JSON Hợp lệ -> Lưu vào biến và Vẽ ra
+            bulkData = data;
+            
+            statusEl.style.color = "#16a34a";
+            statusEl.textContent = `✅ Hợp lệ! Đã tải ${data.length} từ.`;
+            
+            // Hiện khu vực xem trước
+            previewArea.style.display = "block";
+            renderBulkPreview(); // Vẽ danh sách
+            
+            saveBtn.disabled = false;
+        }
+
+    } catch (e) {
+        statusEl.style.color = "#ef4444";
+        statusEl.textContent = "❌ Đang chờ JSON hợp lệ...";
+        previewArea.style.display = "none";
+        saveBtn.disabled = true;
+    }
+}
+
+function renderBulkPreview(filterText = "") {
+    const container = document.getElementById("bulk-list-container");
+    const countEl = document.getElementById("preview-count");
+    container.innerHTML = "";
+
+    const keyword = filterText.toLowerCase().trim();
+    let visibleCount = 0;
+
+    bulkData.forEach((item, index) => {
+        // Kiểm tra xem có khớp từ khóa tìm kiếm không
+        const match = (item.word || "").toLowerCase().includes(keyword) || 
+                      (item.meaning || "").toLowerCase().includes(keyword);
+        
+        if (!match) return; // Nếu không khớp thì ẩn
+
+        visibleCount++;
+
+        const div = document.createElement("div");
+        div.className = "bulk-item-row";
+        div.innerHTML = `
+            <div class="bulk-word-col">${item.word}</div>
+            <div class="bulk-ipa-col">${item.ipa || ""}</div>
+            <div class="bulk-mean-col">${item.meaning}</div>
+            <button class="btn-delete-mini" onclick="removeBulkItem(${index})" title="Xóa từ này">×</button>
+        `;
+        container.appendChild(div);
+    });
+
+    countEl.textContent = visibleCount;
+}
+
+// 3. HÀM LỌC (GẮN VÀO Ô INPUT)
+function filterBulkPreview() {
+    const txt = document.getElementById("bulk-search-input").value;
+    renderBulkPreview(txt);
+}
+
+
+// 4. XÓA 1 TỪ KHỎI DANH SÁCH PREVIEW
+function removeBulkItem(index) {
+    bulkData.splice(index, 1); // Xóa khỏi mảng gốc
+    
+    // Vẽ lại (giữ nguyên từ khóa tìm kiếm đang nhập)
+    const txt = document.getElementById("bulk-search-input").value;
+    renderBulkPreview(txt);
+    
+    // Cập nhật trạng thái
+    document.getElementById("json-status").textContent = `Đã xóa. Còn lại ${bulkData.length} từ.`;
+    
+    // Nếu xóa hết thì khóa nút lưu
+    if (bulkData.length === 0) {
+        document.getElementById("btn-process-json").disabled = true;
+        document.getElementById("bulk-preview-area").style.display = "none";
+    }
+}
+
+
+// 5. LƯU (SỬ DỤNG BIẾN bulkData ĐÃ ĐƯỢC LỌC/XÓA)
+async function processAndSaveBulk() {
+    const btn = document.getElementById("btn-process-json");
+    if (!btn || btn.disabled) return;
+    if (bulkData.length === 0) return;
+
+    // --- (Phần code bên dưới giữ nguyên logic như bài trước) ---
+    // Khóa nút
+    const originalText = btn.textContent;
+    btn.textContent = "⏳ Đang xử lý...";
+    btn.disabled = true;
+
+    let targetFolder = "";
+    if (typeof activeFolder !== 'undefined' && activeFolder && activeFolder !== "ALL" && activeFolder !== "_NO_FOLDER_") {
+        targetFolder = activeFolder;
+    }
+
+    let successCount = 0;
+    let duplicateCount = 0;
+    const total = bulkData.length;
+
+    for (let i = 0; i < total; i++) {
+        const item = bulkData[i];
+        btn.textContent = `⏳ Lưu ${i + 1}/${total}...`;
+
+        const wordText = (item.word || "").trim();
+        if (!wordText) continue;
+
+        // Check trùng
+        const isDuplicate = words.some(w => (w.word || "").toLowerCase() === wordText.toLowerCase());
+        if (isDuplicate) {
+            duplicateCount++;
+            continue;
+        }
+
+        const newWord = {
+            word:      wordText,
+            meaning:   item.meaning || "",
+            ipa:       item.ipa || "",
+            sentence:  item.sentence || "",
+            type:      item.type || "",
+            folder:    targetFolder,
+            status:    "new",
+            dateAdded: new Date().toISOString().slice(0, 10),
+            rowIndex:  null
+        };
+
+        words.push(newWord); 
+        // Render search main list
+        const searchEl = document.getElementById("search-input");
+        renderWords(searchEl ? searchEl.value : "");
+
+        try {
+            await sendWordToGoogleSheet_Add(newWord);
+            successCount++;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+    closeBulkModal();
+    updateCount();
+    updateFolderSuggestions(); 
+    
+    let msg = `Đã thêm ${successCount} từ.`;
+    if (duplicateCount > 0) msg += ` (Bỏ qua ${duplicateCount} trùng)`;
+    showToast(msg, successCount > 0 ? "success" : "warning");
+}
+
+async function sendWordToGoogleSheet(wordDataInput = null) {
+    let dataToSend = wordDataInput;
+
+    // TRƯỜNG HỢP 1: Nếu không truyền dữ liệu vào (Tức là đang Thêm thủ công từ Form)
+    // -> Tự đi lấy dữ liệu từ các ô Input trên giao diện
+    if (!dataToSend) {
+        const wordVal = document.getElementById("word").value.trim();
+        const meaningVal = document.getElementById("meaning").value.trim();
+        
+        if (!wordVal || !meaningVal) return null; // Validate cơ bản
+
+        // Lấy status (nếu có)
+        const statusEl = document.getElementById("status");
+        
+        dataToSend = {
+            word: wordVal,
+            meaning: meaningVal,
+            folder: document.getElementById("folder").value.trim(),
+            ipa: document.getElementById("ipa").value.trim(),
+            type: document.getElementById("type").value.trim(),
+            sentence: document.getElementById("sentence").value.trim(),
+            status: statusEl ? statusEl.value : "new",
+            dateAdded: new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+        };
+    }
+
+    // TRƯỜNG HỢP 2: Nếu có dữ liệu truyền vào (Bulk Add), thì dùng luôn dataToSend đó.
+
+    // --- GỬI ĐI (Logic Fetch cũ của bạn) ---
+    // (Thay SCRIPT_URL bằng biến URL của bạn nếu cần)
+
+    // Tạo params
+    const params = new URLSearchParams();
+    params.append("action", "add");
+    params.append("data", JSON.stringify(dataToSend));
+
+    try {
+        const response = await fetch(SHEET_WEB_APP_URL, {
+            method: "POST",
+            body: params,
+            // mode: "no-cors" // CẢNH BÁO: Nếu bạn dùng no-cors bạn sẽ không nhận được json trả về. 
+            // Hãy đảm bảo Google Script của bạn return ContentService.createTextOutput...
+        });
+
+        const result = await response.json();
+        return result; 
+
+    } catch (error) {
+        console.error("Lỗi gửi Sheet:", error);
+        return { status: "error", message: error.message };
+    }
+}
 // ===== INIT =====
 function initStatusSelectOptions() {
     if (!statusSelect) return;
@@ -2569,7 +3128,7 @@ function initStatusSelectOptions() {
     // 1. BẮT ĐẦU MÀN HÌNH CHỜ NGAY LẬP TỨC
     startLoaderSystem();
 // --- KÍCH HOẠT HIỆU ỨNG MÙA ---
-    initSeasonalEffects(); 
+    initUnifiedEffects();
     // ------------------------------
     try {
         // --- Các tác vụ khởi tạo ---
@@ -2607,3 +3166,4 @@ function initStatusSelectOptions() {
         stopLoaderSystem();
     }
 })();
+

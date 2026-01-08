@@ -2107,7 +2107,7 @@ function startScrambleMode() {
 function renderScrambleQuestion() {
     if (currentReviewIdx >= reviewList.length) {
         showCelebration(); // <--- Gọi hàm chúc mừng thay vì showToast
-        backToReviewMenu();
+    
         return;
     }
 

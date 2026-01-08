@@ -233,7 +233,9 @@ html, body {
     pointer-events: none; /* Click xuyên qua */
     user-select: none;
     will-change: transform, left, top;
-    
+    -webkit-transform: translateZ(0); /* Kích hoạt GPU */
+    -webkit-backface-visibility: hidden;
+    will-change: transform, left, top;
     /* Mặc định ẩn để JS định vị xong mới hiện */
     opacity: 0; 
     transition: opacity 0.5s;

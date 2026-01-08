@@ -1450,12 +1450,13 @@ function showSection(sectionId) {
         document.querySelector('.nav-item:nth-child(1)').classList.add('active');
     } 
     else if (sectionId === 'review') {
-        if (reviewSec) reviewSec.style.display = 'block';
          words = userWords;
+        if (reviewSec) reviewSec.style.display = 'block';
         backToReviewMenu();
         document.querySelector('.nav-item:nth-child(2)').classList.add('active');
     }
     else if (sectionId === 'irregular') {
+        
         if (irrSec) irrSec.style.display = 'block';
         if (!isIrregularLoaded) fetchIrregularVerbsFromSheet(); 
         document.querySelector('.nav-item:nth-child(3)').classList.add('active');
@@ -1618,7 +1619,7 @@ function confirmStartGame() {
     }
     else if (pendingMode === 'scramble') {
         document.getElementById('mode-scramble').style.display = 'block';
-        renderScrambleGame();
+        startScrambleMode();
     }
 }
 // 5. Logic Game: Flashcard
@@ -1969,7 +1970,7 @@ function startFillMode() {
     // Nếu chưa có list review thì lấy random 10 từ
     if (!reviewList || reviewList.length === 0) {
         if(words.length > 0) {
-             reviewList = [...words].sort(() => Math.random() - 0.5).slice(0, 10);
+             reviewList = userWords.sort(() => Math.random() - 0.5).slice(0, 10);
         } else {
              showToast("Chưa có dữ liệu từ vựng!", "error");
              return;
@@ -2089,11 +2090,12 @@ function startScrambleMode() {
     document.getElementById('mode-fill').style.display = 'none';
     document.getElementById('topic-summary-view').style.display = 'none';
     document.getElementById('mode-scramble').style.display = 'block';
-
+    
     // Tạo list câu hỏi nếu chưa có
     if (!reviewList || reviewList.length === 0) {
         if(words.length > 0) {
-             reviewList = [...words].sort(() => Math.random() - 0.5).slice(0, 10);
+             reviewList = userWords.sort(() => Math.random() - 0.5).slice(0, 10);
+             currentReviewIdx = 0;
         } else {
              showToast("Chưa có dữ liệu từ vựng!", "error");
              return;
@@ -2105,44 +2107,56 @@ function startScrambleMode() {
 }
 
 function renderScrambleQuestion() {
+    // 1. Kiểm tra kết thúc game
     if (currentReviewIdx >= reviewList.length) {
-        showCelebration(); // <--- Gọi hàm chúc mừng thay vì showToast
-    
+        showCelebration();
         return;
     }
 
+    // 2. Lấy từ hiện tại
     currentScrambleWordObj = reviewList[currentReviewIdx];
-    const correctWord = currentScrambleWordObj.word.toUpperCase(); // Chuẩn hóa về chữ hoa
     
-    // Reset dữ liệu
-    scrambleUserAnswer = new Array(correctWord.length).fill(null); // Mảng rỗng độ dài bằng từ
-    
-    document.getElementById('scramble-mean').textContent = currentScrambleWordObj.meaning;
-    document.getElementById('scramble-feedback').textContent = "Bấm vào chữ cái để sắp xếp";
-    document.getElementById('scramble-feedback').style.color = "#64748b";
+    // [FIX LỖI]: Nếu từ bị lỗi (undefined hoặc không có word), tự động next
+    if (!currentScrambleWordObj || !currentScrambleWordObj.word) {
+        console.warn("Phát hiện từ lỗi, đang tự động bỏ qua...", currentReviewIdx);
+        currentReviewIdx++;
+        renderScrambleQuestion(); // Đệ quy gọi lại ngay
+        return;
+    }
 
-    // 1. RENDER CÁC Ô TRỐNG (SLOTS)
+    const correctWord = currentScrambleWordObj.word.toUpperCase();
+    
+    // Reset mảng câu trả lời
+    scrambleUserAnswer = new Array(correctWord.length).fill(null); 
+    
+    // 3. Hiển thị thông tin lên màn hình
+    const meanEl = document.getElementById('scramble-mean');
+    if(meanEl) meanEl.textContent = currentScrambleWordObj.meaning || "(Chưa có nghĩa)";
+    
+    const fbEl = document.getElementById('scramble-feedback');
+    if(fbEl) {
+        fbEl.textContent = "Bấm vào chữ cái để sắp xếp";
+        fbEl.style.color = "#64748b";
+    }
+
+    // 4. Render Ô trống (Slots)
     const slotsArea = document.getElementById('scramble-slots-area');
     slotsArea.innerHTML = "";
     
     for (let i = 0; i < correctWord.length; i++) {
         const slot = document.createElement("div");
         slot.className = "scramble-slot";
-        slot.dataset.index = i; // Lưu vị trí
-        
-        // Sự kiện: Bấm vào ô để xóa chữ (Undo)
+        slot.dataset.index = i;
         slot.onclick = () => undoScrambleLetter(i);
-        
         slotsArea.appendChild(slot);
     }
 
-    // 2. RENDER CÁC KÝ TỰ ĐẢO LỘN (POOL)
+    // 5. Render Ký tự đảo lộn (Pool)
     const poolArea = document.getElementById('scramble-pool-area');
     poolArea.innerHTML = "";
     
-    // Tách từ thành mảng và xáo trộn
     let chars = correctWord.split("");
-    // Thuật toán xáo trộn Fisher-Yates
+    // Xáo trộn mảng
     for (let i = chars.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [chars[i], chars[j]] = [chars[j], chars[i]];
@@ -2153,11 +2167,8 @@ function renderScrambleQuestion() {
         btn.className = "pool-btn";
         btn.textContent = char;
         btn.dataset.char = char;
-        btn.dataset.poolId = idx; // ID duy nhất để biết nút nào đã bấm
-        
-        // Sự kiện: Chọn ký tự
+        btn.dataset.poolId = idx;
         btn.onclick = () => selectScrambleLetter(char, idx, btn);
-        
         poolArea.appendChild(btn);
     });
 }

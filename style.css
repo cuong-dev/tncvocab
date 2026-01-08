@@ -3160,16 +3160,6 @@ html, body {
     
     /* Ẩn dòng tiêu đề bảng (Word, IPA, Meaning...) */
 
-    #word-list {
-    /* Đặt chiều cao tối thiểu khoảng 60% màn hình */
-    /* Giúp khung không bị co lại khi ít từ, nút phân trang không bị nhảy lên */
-    min-height: 60vh; 
-    
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Luôn bắt đầu từ trên cùng */
-    gap: 0; /* Khoảng cách do word-row tự xử lý */
-}
     .word-header {
         display: none; 
     }
@@ -3316,10 +3306,6 @@ html, body {
     }
     .search-wrapper:focus-within {
         width: 180px;
-    }
-
-    .search-wrapper.compact {
-        width: 100%; /* Search full chiều ngang */
     }
 
     .search-wrapper.compact {

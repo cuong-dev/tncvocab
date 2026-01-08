@@ -3591,28 +3591,48 @@ async function sendWordToGoogleSheet(wordDataInput = null) {
     }
 }
 
-// 1. Tải danh sách giọng đọc
 function loadVoiceOptions() {
+    // 1. Lấy danh sách giọng hiện có
     availableVoices = window.speechSynthesis.getVoices();
     const voiceSelect = document.getElementById("voice-select");
-    if (!voiceSelect) return;
+    
+    // Nếu chưa lấy được element hoặc danh sách rỗng -> thử lại sau
+    if (!voiceSelect) return; 
+    
+    // 2. Xử lý trường hợp danh sách rỗng (Đặc thù Mobile)
+    if (availableVoices.length === 0) {
+        // Vẫn giữ "Đang tải..." nhưng không xóa đi vội
+        // Thử lại sau 500ms (Cơ chế Retry)
+        setTimeout(loadVoiceOptions, 500); 
+        return;
+    }
 
-    // Lọc lấy các giọng tiếng Anh (en)
+    // 3. Lọc giọng Tiếng Anh (en) để danh sách đỡ dài
     const enVoices = availableVoices.filter(v => v.lang.includes('en'));
+    
+    // Nếu không tìm thấy giọng tiếng Anh nào, lấy tất cả
+    const voicesToShow = enVoices.length > 0 ? enVoices : availableVoices;
 
-    voiceSelect.innerHTML = enVoices.map(v => 
+    // 4. Vẽ lại Select Box
+    voiceSelect.innerHTML = voicesToShow.map(v => 
         `<option value="${v.name}" ${v.name === localStorage.getItem("pref_voice") ? 'selected' : ''}>
-            ${v.name}
+            ${v.name} (${v.lang})
         </option>`
     ).join('');
+    
+    // Thêm tùy chọn mặc định nếu thích
+    if(voicesToShow.length === 0) {
+         voiceSelect.innerHTML = '<option value="">Google US English (Mặc định)</option>';
+    }
 
     // Load tốc độ đã lưu
     const savedSpeed = localStorage.getItem("pref_speed");
     if (savedSpeed) {
         document.getElementById("voice-speed").value = savedSpeed;
-        document.getElementById("speed-val").innerText = savedSpeed;
+        document.getElementById("speed-val").innerText = savedSpeed + "x";
     }
 }
+loadVoiceOptions();
 
 // Lắng nghe sự kiện thay đổi giọng của hệ thống
 window.speechSynthesis.onvoiceschanged = loadVoiceOptions;

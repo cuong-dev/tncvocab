@@ -5,7 +5,7 @@
     <title>TNC English - Học từ vựng tiếng Anh qua Flashcard & AI</title>
     
     <meta name="description" content="Ứng dụng học từ vựng tiếng Anh miễn phí với phương pháp Lặp lại ngắt quãng (Spaced Repetition). Hỗ trợ tra từ điển, Flashcard, AI gợi ý và ôn tập hiệu quả." />
-    <meta name="keywords" content="học tiếng anh, từ vựng tiếng anh, flashcard, spaced repetition, ôn thi toeic, ielts, tnc english, vocab master" />
+    <meta name="keywords" content="học tiếng anh,tncenglish, từ vựng tiếng anh, flashcard, spaced repetition, ôn thi toeic, ielts, tnc english, vocab master" />
     <meta name="author" content="TNC English" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
@@ -40,7 +40,7 @@
             </div>
 
             <nav class="nav">
-                <button class="nav-item active" onclick="showSection('vocab')">
+                <button class="nav-item active" onclick="showSection('vocab')" >
                     <span class="nav-icon">📚</span>
                     <span class="nav-text">Từ vựng</span>
                 </button>
@@ -51,6 +51,10 @@
                 <button class="nav-item" onclick="showSection('irregular')">
                     <span class="nav-icon">🔥</span>
                     <span class="nav-text">Động từ BQT</span>
+                </button>
+                <button class="nav-item" onclick="showSection('lessons')">
+                    <span class="nav-icon">📖</span>
+                    <span class="nav-text">Bài học</span>
                 </button>
                 <button class="nav-item" onclick="showSection('profile')">
                     <span class="nav-icon">👤</span>
@@ -67,7 +71,7 @@
                     </div>
                 </div>
                 
-                <div class="app-version">v1.2.0 • Made with ❤️</div>
+                <div class="app-version">v1.2.1 • Made with ❤️</div>
             </div>
         </aside>
 
@@ -155,10 +159,6 @@
                 <div class="card-header-row">
                     <div>
                         <div class="card-title">Danh sách từ vựng</div>
-                        <p class="card-description">Kho từ vựng cá nhân</p>
-                    </div>
-                    <div class="pill" style="background:#f3f4f6; color:#6b7280;">
-                        <span id="total-words-val">0</span> từ
                     </div>
                 </div>
 
@@ -170,9 +170,6 @@
                             <input type="text" id="search-input" placeholder="Tìm kiếm..." autocomplete="off">
                             <button id="clear-search" class="clear-icon" style="display:none;">&times;</button>
                         </div>
-                        <button id="reload-button" class="mini-btn icon-only" title="Tải lại">
-                            🔄
-                        </button>
                         <div style="width:1px; height:24px; background:#e5e7eb; margin:0 4px;"></div>
                     </div>
 
@@ -235,23 +232,27 @@
             </div>
             <div id="mode-scramble" style="display:none;">
                 <button class="btn-ghost" onclick="backToReviewFolder()">← Chọn lại chủ đề</button>
-                <div class="scramble-container">
-                    <div class="question-box">
-                        <div class="q-label">Nghĩa tiếng Việt:</div>
-                        <div id="scramble-meaning" class="q-text">...</div>
-                    </div>
+                <div class="scramble-game-container">
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase;">Gợi ý nghĩa</div>
+                            <div id="scramble-mean" style="font-size:20px; font-weight:600; color:#1e293b; margin-top:4px;">...</div>
+                        </div>
 
-                    <div id="scramble-answer-zone" class="scramble-slots"></div>
+                        <div id="scramble-slots-area" class="scramble-slots">
+                            </div>
 
-                    <div id="scramble-pool" class="scramble-pool"></div>
+                        <div style="height: 20px; margin-bottom: 10px;">
+                            <span id="scramble-feedback" style="font-size:13px; font-weight:500;"></span>
+                        </div>
 
-                    <div id="scramble-feedback" class="feedback-msg"></div>
+                        <div id="scramble-pool-area" class="scramble-pool">
+                            </div>
 
-                    <div class="review-controls" style="justify-content: center; margin-top:20px; gap:10px;">
-                        <button class="btn-ghost" onclick="resetScramble()">Xếp lại</button>
-                        <button class="btn-primary" onclick="checkScrambleAnswer()">Kiểm tra</button>
-                        <button class="btn-ghost" onclick="nextScrambleQuestion()">Câu tiếp →</button>
-                    </div>
+                        <button onclick="nextScrambleWord()" class="btn-ghost" style="margin-top:30px; font-size:13px; color:#64748b;">
+                            Bỏ qua từ này
+                        </button>
+
                 </div>
             </div>
 
@@ -287,6 +288,9 @@
                         </div>
                     </div>
                     <div class="review-controls">
+                        <button id="btn-review-jumping" class="btn-ghost" onclick="toggleReviewJumpingMode()" style="border: 1px solid #d946ef; color: #a21caf; background: #fdf4ff; font-weight: 600;">
+                            ⚡ Hack não từ này
+                         </button>
                         <button class="btn-ghost" onclick="prevFlashcard()">Trước</button>
                         <span id="fc-progress">0/0</span>
                         <button class="btn-primary" onclick="nextFlashcard()">Tiếp theo →</button>
@@ -297,19 +301,22 @@
             <div id="mode-fill" style="display:none;">
                 <button class="btn-ghost" onclick="backToReviewFolder()">← Chọn lại chủ đề</button>
                 <div class="fill-game-container">
-                    <div class="question-box">
-                        <div class="q-label">Nghĩa tiếng Việt:</div>
-                        <div id="fill-meaning" class="q-text">...</div>
-                        <div class="q-label" style="margin-top:12px;">Chủ đề: <span id="fill-folder" style="font-weight:normal">...</span></div>
-                    </div>
-                    <div class="answer-box">
-                        <input type="text" id="fill-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" />
-                        <button class="btn-primary" onclick="checkFillAnswer()">Check</button>
-                    </div>
-                    <div id="fill-feedback" class="feedback-msg"></div>
-                    <div class="review-controls" style="justify-content: center; margin-top:20px;">
-                        <button class="btn-ghost" onclick="nextFillQuestion()">Câu tiếp theo →</button>
-                    </div>
+                        
+                        <div class="fill-hint-box">
+                            <div style="font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Gợi ý nghĩa</div>
+                            <div id="fill-mean" class="fill-hint-text" style="font-size:20px; color:#1e293b; font-weight:600; line-height:1.4;">Đang tải...</div>
+                            <div id="fill-ipa" class="fill-ipa" style="margin-top:5px; font-family:monospace; color:#64748b;">/ipa/</div>
+                        </div>
+
+                        <div class="fill-input-wrapper">
+                            <input type="text" id="fill-input" class="fill-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off">
+                            <span id="fill-status-icon" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); font-size:20px; display:none;"></span>
+                        </div>
+
+                        <button onclick="checkFillAnswer()" class="btn-check-fill">Kiểm tra ↵</button>
+                        
+                        <button onclick="nextFillWord()" class="btn-ghost" style="margin-top:15px; font-size:13px; color:#64748b;">Bỏ qua từ này</button>
+
                 </div>
             </div>
 
@@ -362,6 +369,46 @@
                 </div>
             </div>
 
+            
+                <h3 style="font-size:16px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:8px;">
+                    ⚙️ Cấu hình giọng đọc
+                </h3>
+
+                <div class="voice-config-card">
+                    <div class="voice-row">
+                        <label class="voice-label">Giọng đọc hệ thống:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="custom-select-wrapper" style="flex:1;">
+                                <select id="voice-select" class="modern-select">
+                                    <option>Đang tải danh sách...</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                            <button class="btn-test-voice" onclick="testCurrentVoice()">
+                                <span>🔊</span> Thử
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="voice-row">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <label class="voice-label" style="margin:0;">Tốc độ đọc</label>
+                            <span id="speed-val" style="font-size:13px; font-weight:700; color:#6366f1;">0.95x</span>
+                        </div>
+                        
+                        <input type="range" id="voice-speed" class="modern-range" 
+                            min="0.5" max="1.5" step="0.05" value="0.95"
+                            oninput="document.getElementById('speed-val').innerText = this.value + 'x'">
+                            
+                        <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-top:6px;">
+                            <span>Chậm</span>
+                            <span>Bình thường</span>
+                            <span>Nhanh</span>
+                        </div>
+                    </div>
+                </div>
+           
+
             <div class="settings-list">
                 <div class="setting-item" onclick="showApiKeyModal()">
                     <div class="setting-left">
@@ -402,10 +449,139 @@
             </button>
             
             <div style="text-align:center; margin-top:20px; font-size:11px; color:#9ca3af;">
-                Phiên bản 1.2.0 • TNC English
+                Phiên bản 1.2.1 • TNC English
             </div>
         </section>
+
+        <section id="lessons-section" class="card" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            
+            <div id="course-list-view">
+                <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px; color: #4f46e5;">📚</span>
+                    <h2 class="card-title" style="margin:0; font-size: 22px;">Tất cả khóa học</h2>
+                </div>
+                <div id="course-list-container" class="lesson-grid">
+                    </div>
+            </div>
+
+            <div id="topic-list-view" style="display: none;">
+                <div class="topic-view-header">
+                    <div class="header-top-row" onclick="backToCourses()">
+                        <span style="font-size: 18px; color: #3b82f6;">❮</span> 
+                        <h3 id="current-course-title" style="margin:0; font-size: 16px; color: #1f2937;">Tên khóa học</h3>
+                    </div>
+                    
+                    <div class="header-progress-row">
+                        <div class="progress-track" style="height: 6px;">
+                            <div id="course-total-progress" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="course-progress-text" style="font-size: 11px; color: #6b7280; min-width: 40px; text-align: right;">0 / 0</span>
+                        <span style="font-size: 16px; color: #3b82f6; margin-left: 8px;">📖</span>
+                    </div>
+                </div>
+
+                <div id="topic-list-container" class="topic-grid">
+                    </div>
+            </div>
+
+        </section>
+        <section id="learning-section" class="card" style="display:none; border:none; background:transparent; padding:0; box-shadow:none; height: 100%;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding: 0 10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button onclick="closeLearningMode()" class="btn-ghost" style="font-size:18px; padding:4px 8px;">✕</button>
+                    <div>
+                        <div style="font-size:12px; color:#6b7280; text-transform:uppercase;">Đang học</div>
+                        <div id="learning-topic-title" style="font-size:16px; font-weight:700; color:#1f2937;">Topic Name</div>
+                    </div>
+                </div>
+                <div id="learning-progress-text" style="font-size:14px; font-weight:600; color:#4f46e5;">1/10</div>
+            </div>
+
+            <div id="learning-card-container" class="flashcard-container" style="margin-top:10px; height: calc(100vh - 150px); justify-content: flex-start;">
+                <div class="flashcard-scene" style="width: 100%; max-width: 340px; height: 420px;">
+                    <div class="flashcard" id="topic-flashcard-el" onclick="flipTopicCard()">
+                        <div class="flashcard-face flashcard-front">
+                            <span class="badge-new" style="position:absolute; top:20px; right:20px;">Learning</span>
+                            <h2 id="learn-word" style="font-size:32px; margin-bottom:8px;">Word</h2>
+                            <p id="learn-ipa" style="color:#6b7280; font-family:monospace; font-size:16px;">/ipa/</p>
+                            <div class="tap-hint">Chạm để lật & xem nghĩa</div>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <div id="learn-meaning" style="font-weight:700; font-size:22px; color:#166534; margin-bottom:12px;">Nghĩa</div>
+                            <div style="width:40px; height:2px; background:#e5e7eb; margin:0 auto 12px;"></div>
+                            <p id="learn-sentence" style="font-style:italic; color:#4b5563; font-size:15px; padding:0 20px;">Sentence</p>
+                            <div style="margin-top:20px;">
+                                <span class="tag-level" id="learn-type">noun</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-controls" style="margin-top:30px; width: 100%; max-width: 340px;">
+                    <button id="btn-jumping-mode" class="btn-ghost" onclick="toggleJumpingMode()" style="border: 1px solid #d946ef; color: #a21caf; background: #fdf4ff; font-weight: 600;">
+                                ⚡ Hack não từ này
+                    </button>
+                    <button class="btn-primary" onclick="nextTopicCard()" style="width:100%; padding:14px; font-size:16px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);">
+                        Đã hiểu, tiếp theo ➜
+                    </button>
+                </div>
+            </div>
+
+            <div id="topic-summary-view" style="display: none; background: white; border-radius: 20px; padding: 20px; margin-top: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <div style="font-size:40px; margin-bottom:10px;">🎉</div>
+                    <div class="card-title" style="font-size:20px;">Hoàn thành bài học!</div>
+                    <p class="card-description">Chọn từ bạn muốn lưu vào sổ tay cá nhân.</p>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#f9fafb; padding:8px 12px; border-radius:8px;">
+                    <label style="font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="check-all-summary" onchange="toggleCheckAllSummary()"> Chọn tất cả
+                    </label>
+                    <span id="selected-count" style="font-size:12px; color:#6b7280;">0 đã chọn</span>
+                </div>
+
+                <div id="summary-list-container" class="summary-list-scroll" style="max-height: 50vh;"></div>
+
+                <div class="modal-actions" style="margin-top: 20px; justify-content: center; gap: 12px;">
+                    <button class="btn-ghost" onclick="closeLearningMode()">Về danh sách</button>
+                    <button class="btn-primary" onclick="saveSelectedSummaryWords()" id="btn-save-summary">💾 Lưu vào Sổ tay</button>
+                </div>
+            </div>
+
+        </section>
         </main>
+    </div>
+</div>
+
+<div id="auto-play-modal" class="modal-backdrop" style="display:none; z-index: 99999;">
+    <div class="modal-card" style="width: 90%; height: 80%; max-width: 600px; padding: 0; display: flex; flex-direction: column; overflow: hidden; background: #fdf4ff;">
+        
+        <div style="padding: 15px 20px; background: white; border-bottom: 1px solid #f0abfc; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">⚡</span>
+                <span style="font-weight:800; color:#a21caf; font-size:16px;">Luyện phản xạ</span>
+            </div>
+            <button onclick="stopJumpingMode()" class="btn-ghost" style="color:#d946ef; font-weight:bold;">ĐÓNG ✕</button>
+        </div>
+
+        <div style="width: 100%; height: 6px; background: #fae8ff;">
+            <div id="auto-play-progress" style="width: 100%; height: 100%; background: linear-gradient(90deg, #d946ef, #a855f7); transition: width 1s linear;"></div>
+        </div>
+
+        <div id="jumping-area" style="flex: 1; position: relative; overflow: hidden; background-image: radial-gradient(#f5d0fe 1px, transparent 1px); background-size: 20px 20px;">
+            
+            <div id="jumping-word-el" class="jumping-card">
+                <div id="jump-word-text" class="jump-text">Ready?</div>
+                <div id="jump-word-mean" class="jump-mean">Chuẩn bị...</div>
+            </div>
+
+        </div>
+
+        <div style="padding: 10px; text-align: center; color: #a21caf; font-size: 12px; background: white; border-top: 1px solid #f0abfc;">
+            🔊 Nghe và nhìn theo từ vựng đang xuất hiện
+        </div>
     </div>
 </div>
 

@@ -229,7 +229,7 @@ html, body {
 ============================================================ */
 .screen-pet {
     position: fixed;
-    z-index: 10000; /* Cao hơn cả Modal để bò lên trên */
+    z-index: 9000 !important;
     pointer-events: none; /* Click xuyên qua */
     user-select: none;
     will-change: transform, left, top;
@@ -1193,7 +1193,7 @@ html, body {
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px); /* Làm mờ nền phía sau */
     display: flex; justify-content: center; align-items: center;
-    z-index: 999999;
+    z-index: 999999 !important;
 }
 
 .modal-card-premium {
@@ -1597,11 +1597,107 @@ html, body {
     margin-top: 20px;
 }
 
-/* FILL GAME STYLES */
+/* ===============================
+   FIX LỖI BỐ CỤC GAME ĐIỀN TỪ
+=================================*/
+
 .fill-game-container {
-    max-width: 400px;
-    margin: 20px auto;
+    /* Dùng Flexbox để căn giữa dọc/ngang nội dung */
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    
+    width: 100%;            /* Chiếm toàn bộ chiều ngang của thẻ cha */
+    max-width: 420px;       /* Giới hạn độ rộng chuẩn mobile */
+    margin: 0 auto;         /* Căn giữa container */
+    padding: 10px;          /* Khoảng cách an toàn 2 bên */
+    box-sizing: border-box; /* Quan trọng */
 }
+
+/* Ép tất cả các thành phần con phải rộng bằng nhau */
+.fill-hint-box,
+.fill-input-wrapper,
+.btn-check-fill {
+    width: 100%;
+    box-sizing: border-box; /* Tính cả padding/border vào width -> Chống lệch */
+}
+
+/* --- Style cũ giữ nguyên nhưng thêm box-sizing --- */
+.fill-hint-box {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px 15px;
+    margin-bottom: 25px;
+    border: 1px dashed #cbd5e1;
+    text-align: center;
+}
+
+.fill-input-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.fill-input {
+    width: 100%;            /* Rộng 100% của wrapper */
+    padding: 16px;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    color: #4f46e5;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box; /* QUAN TRỌNG NHẤT: Khắc phục lỗi input bị thò ra */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.fill-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Các trạng thái đúng/sai */
+.fill-input.correct {
+    border-color: #10b981 !important;
+    background-color: #ecfdf5 !important;
+    color: #047857 !important;
+}
+
+.fill-input.wrong {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
+    animation: shake 0.4s ease-in-out;
+}
+
+.btn-check-fill {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+    transition: transform 0.1s;
+}
+
+.btn-check-fill:active {
+    transform: scale(0.98);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+
 .question-box {
     background: #eff6ff;
     padding: 16px;
@@ -1634,33 +1730,89 @@ html, body {
 .feedback-msg.wrong { color: #dc2626; font-weight: 600; }
 
 /* GAME SẮP XẾP (SCRAMBLE) */
-.scramble-container {
-    max-width: 450px;
-    margin: 20px auto;
+.scramble-game-container {
     text-align: center;
-}
-
-/* Vùng chứa các ô chữ kết quả */
-.scramble-slots {
-    min-height: 50px;
-    background: #f3f4f6;
-    border-radius: 12px;
     padding: 10px;
-    margin-bottom: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+/* Khu vực chứa các ô trống (Slots) */
+.scramble-slots {
     display: flex;
     justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    border: 2px dashed #d1d5db;
+    gap: 8px;
+    margin-bottom: 30px;
+    flex-wrap: wrap; /* Xuống dòng nếu từ quá dài */
+}
+
+/* Ô chữ cái (Slot) */
+.scramble-slot {
+    width: 45px;
+    height: 45px;
+    border: 2px dashed #cbd5e1; /* Nét đứt khi chưa có chữ */
+    border-radius: 12px;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    font-size: 20px;
+    font-weight: 700;
+    color: #374151;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.scramble-slot.filled {
+    border-style: solid;
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.scramble-slot.correct {
+    background-color: #dcfce7 !important; /* Xanh lá nhạt */
+    border-color: #16a34a !important;
+    color: #166534 !important;
+}
+
+.scramble-slot.wrong {
+    background-color: #fee2e2 !important; /* Đỏ nhạt */
+    border-color: #ef4444 !important;
+    color: #b91c1c !important;
+    animation: shake 0.3s;
 }
 
 /* Vùng chứa các ô chữ nguồn */
 .scramble-pool {
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 16px;
+    margin-top: 20px;
+}
+.pool-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #e0e7ff;
+    color: #4338ca;
+    font-weight: 600;
+    font-size: 18px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+
+.pool-btn:active { transform: scale(0.95); }
+
+/* Khi nút đã được chọn thì mờ đi và không bấm được nữa */
+.pool-btn.used {
+    opacity: 0.2;
+    pointer-events: none;
+    transform: scale(0.9);
 }
 
 /* Ô chữ cái */
@@ -2190,6 +2342,331 @@ html, body {
     border-radius: 4px;
 }
 
+/* ===============================
+   LESSON TAB STYLES
+=================================*/
+.lesson-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 40px;
+}
+
+.lesson-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lesson-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    border-color: #4f46e5;
+}
+
+/* Hiệu ứng viền xanh đậm cho bài đang học (HIỆN TẠI) */
+.lesson-card.active-course {
+    border: 2px solid #3b82f6;
+    background: #eff6ff;
+}
+
+/* --- BADGES (Nhãn NEW / HIỆN TẠI) --- */
+.lesson-badge {
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.badge-current { background: #2563eb; } /* Xanh dương */
+.badge-new { background: #f97316; }     /* Cam */
+
+/* --- HEADER CARD --- */
+.lesson-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.lesson-icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+/* Các màu nền icon khác nhau */
+.bg-blue   { background: #dbeafe; color: #2563eb; }
+.bg-orange { background: #ffedd5; color: #ea580c; }
+.bg-green  { background: #dcfce7; color: #16a34a; }
+.bg-purple { background: #f3e8ff; color: #9333ea; }
+
+.lesson-info {
+    flex: 1;
+}
+.lesson-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+}
+.lesson-desc {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* --- PROGRESS BAR --- */
+.lesson-progress-wrapper {
+    margin-top: 4px;
+}
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #60a5fa, #3b82f6);
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+.trophy-icon {
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+/* Responsive cho mobile */
+@media (max-width: 480px) {
+    .lesson-header { gap: 12px; }
+    .lesson-icon-box { width: 40px; height: 40px; font-size: 20px; }
+    .lesson-title { font-size: 15px; }
+}
+
+/* ===============================
+   TOPIC LIST STYLES (LEVEL 2)
+=================================*/
+
+/* Header của màn hình Topic */
+.topic-view-header {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    border: 1px solid #e5e7eb;
+}
+.header-top-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+.header-top-row:hover h3 { color: #3b82f6; }
+
+.header-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Grid chứa các Topic */
+.topic-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 40px;
+}
+
+/* Thẻ Topic (Pill Style) */
+.topic-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 24px; /* Bo tròn nhiều hơn */
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column; /* Xếp dọc: Nội dung trên, Progress dưới */
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.topic-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border-color: #93c5fd;
+}
+
+.topic-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.topic-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%; /* Tròn vo */
+    background: #eff6ff;
+    border: 2px solid #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.topic-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    flex: 1;
+}
+
+/* Thanh tiến độ nhỏ bên dưới mỗi topic */
+.topic-progress-track {
+    width: 100%;
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-left: 58px; /* Thụt vào thẳng hàng với chữ */
+    width: calc(100% - 58px);
+}
+.topic-progress-fill {
+    height: 100%;
+    background: #60a5fa;
+    border-radius: 99px;
+}
+
+/* ===============================
+   TOPIC SUMMARY STYLES
+=================================*/
+.summary-list-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #ffffff;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+.summary-item:last-child { border-bottom: none; }
+.summary-item:hover { background: #f9fafb; }
+
+/* Custom Checkbox */
+.summary-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-right: 16px;
+    accent-color: #4f46e5; /* Màu tím chủ đạo */
+    cursor: pointer;
+}
+
+.summary-content { flex: 1; }
+.summary-word {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+}
+.summary-mean {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* Từ đã được lưu trước đó thì làm mờ đi */
+.summary-item.already-saved {
+    opacity: 0.6;
+    background: #f0fdf4; /* Xanh nhạt */
+}
+.summary-item.already-saved .summary-word::after {
+    content: " (Đã có trong sổ)";
+    font-size: 10px;
+    color: #16a34a;
+    font-weight: normal;
+    margin-left: 6px;
+}
+
+/* Style cho thẻ từ vựng nhảy */
+.jumping-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    background: #ffffff;
+    border: 2px solid #d946ef;
+    border-radius: 16px;
+    padding: 15px 25px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(217, 70, 239, 0.4);
+    
+    /* Hiệu ứng di chuyển mượt */
+    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                transform 0.3s;
+    
+    cursor: pointer;
+    min-width: 120px;
+    z-index: 10;
+}
+
+.jumping-card:active {
+    transform: translate(-50%, -50%) scale(0.95);
+}
+
+.jump-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: #4f46e5;
+    margin-bottom: 4px;
+}
+
+.jump-mean {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
 /* ============================================================
    GLOBAL LOADER STYLES
 ============================================================ */
@@ -2200,7 +2677,7 @@ html, body {
     width: 100%;
     height: 100%;
     background: #ffffff;
-    z-index: 9999999; /* Luôn nằm trên cùng */
+    z-index: 1000000 !important;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2319,6 +2796,168 @@ html, body {
     50% { transform: translateY(-10px); }
 }
 
+.profile-section {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-top: 20px;
+}
+
+/* Group các mục chọn */
+.setting-item {
+    margin-bottom: 20px;
+}
+
+/* Thiết kế lại Select Box */
+#voice-select {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid #f1f5f9;
+    background-color: #f8fafc;
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+    outline: none;
+    appearance: none; /* Xóa mũi tên mặc định */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    transition: all 0.2s;
+}
+
+/* Các hàng setting */
+.voice-row {
+    margin-bottom: 20px;
+}
+.voice-row:last-child { margin-bottom: 0; }
+.voice-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.modern-select {
+    width: 100%;
+    padding: 12px 16px;
+    padding-right: 40px; /* Chừa chỗ cho mũi tên */
+    font-size: 14px;
+    color: #334155;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    appearance: none; /* Ẩn giao diện mặc định của trình duyệt */
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+
+.modern-select:hover {
+    border-color: #94a3b8;
+}
+
+.modern-select:focus {
+    border-color: #6366f1; /* Màu tím chủ đạo */
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+.voice-config-card {
+    background: #f8fafc; /* Màu nền xám xanh rất nhạt */
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 15px;
+}
+#voice-select:focus {
+    border-color: #6366f1;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* Thiết kế lại Thanh trượt (Slider) */
+#voice-speed {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 5px;
+    background: #e2e8f0;
+    outline: none;
+    margin: 15px 0;
+}
+
+#voice-speed::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.select-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #64748b;
+    font-size: 12px;
+}
+
+/* 2. TÙY BIẾN THANH TRƯỢT (Slider) */
+.modern-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Cục tròn kéo (Thumb) */
+.modern-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #6366f1;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+    transition: transform 0.1s;
+}
+
+.modern-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+/* Nút Test (Nghe thử) */
+.btn-test-voice {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 42px; /* Cao bằng thanh Select */
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-test-voice:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
 /* ============================================================
    SEASONAL EFFECTS (Hiệu ứng theo mùa)
 ============================================================ */
@@ -2329,7 +2968,7 @@ html, body {
     width: 100%;
     height: 100%;
     pointer-events: none; /* Để bấm xuyên qua, không chặn chuột */
-    z-index: 999999;
+    z-index: 9000 !important;
     overflow: hidden;
 }
 
@@ -2428,6 +3067,8 @@ html, body {
         justify-content: center;
         box-shadow: 0 -4px 20px rgba(0,0,0,0.05); /* Đổ bóng ngược lên trên */
     }
+
+    
 
     /* Ẩn bớt các phần rườm rà trên Mobile cho gọn */
     .goal-card, 

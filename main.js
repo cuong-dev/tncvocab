@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycby6IISpVGmgSipGIzB1sX1XDfQBn8AYCByLT5m9knc5kL6E9-xXdD1N12fxJkpXXyCp/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwKj6KkMYpMZn9uX17Mp4h7vuvANKJPScE4JTaZiNq9p6_gCSPcT7HK65Nd0iW7IA7Q/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -11,15 +11,38 @@ const STATUS_CONFIG = [
     // ví dụ thêm status mới:
     // { value: "forgot",   label: "Quên rồi",       className: "status-forgot" },
 ];
+
+let systemWords = []; // Từ thuộc khóa học (Template)
+let userWords = [];   // Từ người dùng tự thêm (Sổ tay)
 let words = [];
 let currentUser = null;
 let editingIndex = -1;
 let activeFolder = null;      // null = chưa chọn folder
 let currentFolderNames = []; 
 let bulkData = []; // Biến chứa dữ liệu tạm thời
-
+let availableVoices = [];
+let viewedCountMap = {};  // Lưu trữ: {"Topic 1": 5, "Topic 2": 10}
+let sessionViewedSet = new Set();
 const PAGE_SIZE = 10;   // mỗi trang 10 từ
 let currentPage = 1;
+let learnList = [];       // Danh sách từ đang học
+let learnIdx = 0;
+let currentTopicName = "";
+
+let jumpInterval = null;    // Interval chuyển từ
+let countdownInterval = null; // Interval đếm ngược
+let currentUtterance = null;
+let isJumpingMode = false;
+
+let repeatInterval = null;
+let isRepeating = false;
+
+let currentFillWordObj = null;
+
+let currentScrambleWordObj = null;
+let scrambleUserAnswer = [];
+
+let currentDataMode = 'notebook';
 
 // ===== DOM ELEMENTS =====
 const wordForm        = document.getElementById("word-form");
@@ -126,6 +149,12 @@ async function syncAccountStatus() {
                 }
             }
 
+            try {
+                viewedCountMap = JSON.parse(data.progressData || "{}");
+            } catch (e) {
+                viewedCountMap = {};
+            }
+            localStorage.setItem("viewed_count", JSON.stringify(viewedCountMap));
             // Lưu profile mới nhất
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
 
@@ -159,6 +188,10 @@ function requireLoginOrRedirect() {
         // Nếu profile có geminiKey nhưng localStorage chưa có => sync từ sheet
         if (currentUser.geminiKey && !localStorage.getItem(GEMINI_KEY_STORAGE_KEY)) {
             localStorage.setItem(GEMINI_KEY_STORAGE_KEY, currentUser.geminiKey);
+        }
+        const cachedProgress = localStorage.getItem("viewed_count");
+        if (cachedProgress) {
+            viewedCountMap = JSON.parse(cachedProgress);
         }
 
     } catch (e) {
@@ -258,38 +291,7 @@ function closeGeminiModal() {
 }
 
 // ===== VOCAB FROM SHEET =====
-async function fetchWordsFromSheet() {
-    if (!currentUser || !currentUser.email) return;
 
-    const url = `${SHEET_WEB_APP_URL}?userEmail=${encodeURIComponent(
-        currentUser.email.toLowerCase()
-    )}`;
-
-    try {
-        const res = await fetch(url, { method: "GET" });
-        const data = await res.json();
-
-        if (data.status === "success" && Array.isArray(data.words)) {
-            words = data.words.map(w => ({
-                rowIndex: w.rowIndex || null,
-                word: w.word || "",
-                folder: w.folder || "",
-                ipa: w.ipa || "",
-                type: w.type || "",
-                meaning: w.meaning || "",
-                sentence: w.sentence || "",
-                dateAdded: w.dateAdded || "",
-                status: w.status || ""
-            }));
-        } else {
-            console.warn("Dữ liệu vocab không hợp lệ:", data);
-            words = [];
-        }
-    } catch (err) {
-        console.error("Lỗi fetch vocab:", err);
-        words = [];
-    }
-}
 
 // ===== SEND VOCAB TO SHEET =====
 function sendWordToGoogleSheet_Add(word) {
@@ -670,9 +672,20 @@ function playPronunciation(text) {
     window.speechSynthesis.cancel();
 
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang  = "en-US";
-    utter.rate  = 0.95;
+    
+    // --- LẤY CẤU HÌNH TỪ HỒ SƠ ---
+    const selectedVoiceName = localStorage.getItem("pref_voice");
+    const selectedSpeed = localStorage.getItem("pref_speed") || 0.95;
+
+    if (selectedVoiceName) {
+        const voice = availableVoices.find(v => v.name === selectedVoiceName);
+        if (voice) utter.voice = voice;
+    }
+
+    utter.lang = "en-US"; // Fallback nếu không chọn được giọng
+    utter.rate = parseFloat(selectedSpeed);
     utter.pitch = 1.0;
+    
     window.speechSynthesis.speak(utter);
 }
 
@@ -750,7 +763,7 @@ function renderWords(filterText = "") {
     // Xóa các dòng cũ (Giữ lại header ảo nếu có, nhưng CSS mobile đã ẩn header rồi)
     // Cách an toàn nhất: Xóa hết con trừ header (nếu bạn dùng giao diện PC cũ)
     // Hoặc xóa sạch và vẽ lại từ đầu nếu dùng giao diện Mobile Card toàn bộ.
-    
+     words = userWords;
     // Ở đây ta dùng logic: Giữ dòng đầu tiên (Header) nếu nó tồn tại
     const rows = Array.from(wordListEl.querySelectorAll(".word-row"));
     rows.forEach((row, index) => {
@@ -760,7 +773,7 @@ function renderWords(filterText = "") {
 
     if (activeFolder === null) activeFolder = "ALL";
     const text = (filterText || "").trim().toLowerCase();
-
+   
     // 1. LỌC DỮ LIỆU
     let filtered = [];
     words.forEach((w, index) => {
@@ -796,6 +809,7 @@ function renderWords(filterText = "") {
         return 0; 
     });
 
+    
     const totalItems = filtered.length;
 
     // Xử lý khi trống
@@ -1402,25 +1416,28 @@ let pendingMode = "";      // Lưu tạm chế độ đang chọn (flashcard/fil
 // 1. Điều hướng Tab
 function showSection(sectionId) {
     // Ẩn tất cả section
-    const sections = ['vocab', 'review', 'irregular', 'profile'];
+    const sections = ['vocab', 'review', 'irregular', 'profile', 'lessons','learning'];
     
     // Lưu ý: Trong HTML cũ bạn đặt ID section hơi lộn xộn (cái thì ID, cái thì class nth-of-type).
     // Tốt nhất bạn nên đặt ID rõ ràng cho từng section trong HTML:
     // vocab-section, review-section, irregular-section, profile-section
     
     // Tạm thời ẩn theo cách cũ + thêm profile
-    const vocabSec = document.querySelector('section.card:nth-of-type(1)'); // Mục Thêm từ
-    const listSec  = document.querySelector('section.card:nth-of-type(2)'); // Mục Danh sách
+    const vocabSec = document.querySelector('section.card:nth-of-type(1)');
+    const listSec  = document.getElementById('list-card-section'); // Đã thêm ID này ở bài trước
     const reviewSec = document.getElementById('review-section');
     const irrSec    = document.getElementById('irregular-section');
     const profileSec = document.getElementById('profile-section');
+    const lessonsSec = document.getElementById('lessons-section'); // MỚI
+    const learnSec = document.getElementById('learning-section')
 
     if (vocabSec) vocabSec.style.display = 'none';
     if (listSec)  listSec.style.display  = 'none';
     if (reviewSec) reviewSec.style.display = 'none';
     if (irrSec)    irrSec.style.display    = 'none';
     if (profileSec) profileSec.style.display = 'none';
-
+    if (lessonsSec) lessonsSec.style.display = 'none';
+    if (learnSec) learnSec.style.display = 'none';
     // Xóa active class ở nav
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 
@@ -1429,10 +1446,12 @@ function showSection(sectionId) {
         if (vocabSec) vocabSec.style.display = 'block';
         if (listSec)  listSec.style.display  = 'block';
         // Active nút đầu tiên
+        words = userWords;
         document.querySelector('.nav-item:nth-child(1)').classList.add('active');
     } 
     else if (sectionId === 'review') {
         if (reviewSec) reviewSec.style.display = 'block';
+         words = userWords;
         backToReviewMenu();
         document.querySelector('.nav-item:nth-child(2)').classList.add('active');
     }
@@ -1442,12 +1461,27 @@ function showSection(sectionId) {
         document.querySelector('.nav-item:nth-child(3)').classList.add('active');
     }
     else if (sectionId === 'profile') {
+         words = userWords;
         if (profileSec) profileSec.style.display = 'block';
         // Active nút thứ 4
-        document.querySelector('.nav-item:nth-child(4)').classList.add('active');
+        document.querySelector('.nav-item:nth-child(5)').classList.add('active');
         
         // Render lại UI Profile mỗi khi vào đây để đảm bảo data mới nhất
         renderUserProfileData();
+    }
+    else if (sectionId === 'lessons') {
+        if (lessonsSec) lessonsSec.style.display = 'block';
+         words = systemWords;
+        // Mặc định luôn hiện view danh sách khóa học khi mới bấm vào
+        document.querySelector('.nav-item:nth-child(4)').classList.add('active');
+        document.getElementById("course-list-view").style.display = "block";
+        document.getElementById("topic-list-view").style.display = "none";
+        
+        renderCourses(); // Render Level 1
+        
+        // Active nav button
+        const btn = Array.from(document.querySelectorAll('.nav-item')).find(b => b.getAttribute('onclick')?.includes('lessons'));
+        if(btn) btn.classList.add('active');
     }
 }
 
@@ -1589,6 +1623,7 @@ function confirmStartGame() {
 }
 // 5. Logic Game: Flashcard
 function renderFlashcard() {
+    
     const w = reviewList[currentReviewIdx];
     const cardEl = document.getElementById('flashcard-el');
     
@@ -1610,7 +1645,7 @@ function flipCard() {
 
     // Lật thẻ bằng cách toggle class 'is-flipped'
     card.classList.toggle("is-flipped");
-
+    const currentWord = reviewList[currentReviewIdx];
     // Kiểm tra nếu thẻ đang lật sang mặt sau (hoặc vừa ấn lật) thì phát âm
     // Ở đây chúng ta sẽ lấy từ đang hiển thị ở mặt trước để phát âm
     const wordText = document.getElementById("fc-word").textContent;
@@ -1621,12 +1656,15 @@ function flipCard() {
 }
 
 function nextFlashcard() {
+    stopJumpingMode();
+    
     if (currentReviewIdx < reviewList.length - 1) {
         currentReviewIdx++;
         renderFlashcard();
-    } else {
-        // THAY ALERT CŨ BẰNG HÀM MỚI
-        showCelebration(); 
+    } 
+    else
+    {
+        showCelebration();
     }
 }
 
@@ -1637,174 +1675,596 @@ function prevFlashcard() {
     }
 }
 
-// 6. Logic Game: Fill in blank
+function startFlashcardFromTopic(topicName) {
+    // Lọc từ
+    const topicWords = words.filter(w => w.folder === topicName);
+    if (topicWords.length === 0) {
+        showToast("Chủ đề này chưa có từ nào!", "error");
+        return;
+    }
+
+    // Setup dữ liệu riêng
+    learnList = [...topicWords]; 
+    learnIdx = 0;
+    currentTopicTitle = topicName;
+
+    // Chuyển giao diện
+    // Ẩn hết các section chính
+    document.querySelectorAll('section.card').forEach(el => el.style.display = 'none');
+    document.getElementById('list-card-section').style.display = 'none'; // Ẩn list nếu có
+    document.getElementById('lessons-section').style.display = 'none';   // Ẩn menu lesson
+
+    // HIỆN SECTION HỌC TẬP RIÊNG
+    const learnSec = document.getElementById('learning-section');
+    learnSec.style.display = 'block';
+    
+    // Reset View: Hiện Card, Ẩn Summary
+    document.getElementById('learning-card-container').style.display = 'flex';
+    document.getElementById('topic-summary-view').style.display = 'none';
+
+    // Cập nhật Header
+    document.getElementById('learning-topic-title').textContent = topicName;
+
+    // Render thẻ đầu tiên
+    renderTopicCard();
+}
+
+function renderTopicCard() {
+    const w = learnList[learnIdx];
+    const cardEl = document.getElementById('topic-flashcard-el');
+    
+    // Reset lật thẻ
+    cardEl.classList.remove('is-flipped');
+
+    // Điền dữ liệu (Delay nhẹ để animation lật về mượt hơn nếu cần)
+    setTimeout(() => {
+        document.getElementById('learn-word').textContent = w.word;
+        document.getElementById('learn-ipa').textContent = w.ipa || "";
+        document.getElementById('learn-meaning').textContent = w.meaning;
+        document.getElementById('learn-sentence').textContent = w.sentence || "No example.";
+        document.getElementById('learn-type').textContent = w.type || "word";
+        
+        // Cập nhật số trang
+        document.getElementById('learning-progress-text').textContent = `${learnIdx + 1} / ${learnList.length}`;
+        
+        // Tự động phát âm khi hiện thẻ mới (Mặt trước)
+        playPronunciation(w.word);
+    }, 200);
+}
+
+// 3. LẬT THẺ (Chỉ dành cho Topic Card)
+function flipTopicCard() {
+    const card = document.getElementById('topic-flashcard-el');
+    card.classList.toggle('is-flipped');
+    
+    // Nếu lật ra sau -> Phát âm lại (hoặc tùy bạn)
+    // if(card.classList.contains('is-flipped')) playPronunciation(learnList[learnIdx].word);
+}
+
+// 4. TIẾP THEO (Logic Đánh dấu + Chuyển)
+function nextTopicCard() {
+    stopRepeatOne();
+    // A. Đánh dấu đã xem (Lưu tiến độ vào Sheet Users)
+    const currentWord = learnList[learnIdx];
+    markAsViewed(currentWord); 
+
+    // B. Chuyển thẻ
+    if (learnIdx < learnList.length - 1) {
+        learnIdx++;
+        renderTopicCard();
+    } else {
+        // Hết thẻ -> Hiện Summary
+        showTopicSummary();
+    }
+}
+
+function showTopicSummary() {
+    document.getElementById('learning-card-container').style.display = 'none';
+    document.getElementById('topic-summary-view').style.display = 'block';
+    
+    // Render list để chọn lưu (Dùng lại logic render cũ nhưng đổi nguồn dữ liệu là learnList)
+    renderSummaryListCheckboxes(); 
+}
+
+function renderSummaryListCheckboxes() {
+    const container = document.getElementById("summary-list-container");
+    container.innerHTML = "";
+    document.getElementById("check-all-summary").checked = false;
+    document.getElementById("selected-count").textContent = "0 đã chọn";
+
+    learnList.forEach((w, index) => {
+        // Check xem đã có trong Sổ tay chưa (userWords là biến global chứa từ riêng)
+        const isSaved = userWords.some(u => u.word.toLowerCase() === w.word.toLowerCase());
+
+        const div = document.createElement("div");
+        div.className = `summary-item ${isSaved ? 'already-saved' : ''}`;
+        
+        const checkboxHtml = isSaved 
+            ? `<input type="checkbox" class="summary-checkbox" disabled>`
+            : `<input type="checkbox" class="summary-checkbox" value="${index}" onchange="updateSummaryCount()">`;
+
+        div.innerHTML = `
+            ${checkboxHtml}
+            <div class="summary-content" onclick="toggleSummaryRow(this)">
+                <div class="summary-word">${w.word}</div>
+                <div class="summary-mean">${w.meaning}</div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+
+function toggleSummaryRow(el) {
+    const cb = el.parentElement.querySelector('.summary-checkbox');
+    if(!cb.disabled) {
+        cb.checked = !cb.checked;
+        updateSummaryCount();
+    }
+}
+
+function updateSummaryCount() {
+    const count = document.querySelectorAll('#summary-list-container .summary-checkbox:checked').length;
+    document.getElementById('selected-count').textContent = `${count} đã chọn`;
+}
+
+function toggleCheckAllSummary() {
+    const isChecked = document.getElementById("check-all-summary").checked;
+    document.querySelectorAll('#summary-list-container .summary-checkbox:not(:disabled)').forEach(cb => cb.checked = isChecked);
+    updateSummaryCount();
+}
+// Hàm kết thúc phiên học -> Hiện list
+function finishTopicSession() {
+    document.getElementById('mode-flashcard').style.display = 'none';
+    document.getElementById('topic-summary-view').style.display = 'block';
+    
+    renderSummaryList();
+}
+
+function renderSummaryList() {
+    const container = document.getElementById("summary-list-container");
+    container.innerHTML = "";
+    
+    // Reset nút chọn tất cả
+    document.getElementById("check-all-summary").checked = false;
+    updateSelectedCount();
+
+    reviewList.forEach((w, index) => {
+        // Kiểm tra xem từ này đã có trong User Words chưa (để disable hoặc đánh dấu)
+        // Giả sử userWords là mảng từ vựng riêng của user
+        const isSaved = userWords.some(u => u.word.toLowerCase() === w.word.toLowerCase());
+
+        const div = document.createElement("div");
+        div.className = `summary-item ${isSaved ? 'already-saved' : ''}`;
+        
+        // Nếu chưa lưu thì mới cho check, đã lưu rồi thì disable
+        const checkboxHtml = isSaved 
+            ? `<input type="checkbox" class="summary-checkbox" disabled>`
+            : `<input type="checkbox" class="summary-checkbox" value="${index}" onchange="updateSelectedCount()">`;
+
+        div.innerHTML = `
+            ${checkboxHtml}
+            <div class="summary-content" onclick="toggleSummaryCheck(this)">
+                <div class="summary-word">${w.word} <span style="font-weight:normal; font-size:12px; color:#6b7280;">${w.ipa || ""}</span></div>
+                <div class="summary-mean">${w.meaning}</div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Helper: Click vào dòng cũng check được checkbox
+function toggleSummaryCheck(el) {
+    const checkbox = el.parentElement.querySelector('.summary-checkbox');
+    if (!checkbox.disabled) {
+        checkbox.checked = !checkbox.checked;
+        updateSelectedCount();
+    }
+}
+
+async function saveSelectedSummaryWords() {
+    if (!checkAccess()) return;
+
+    const checkboxes = document.querySelectorAll('#summary-list-container .summary-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast("Chưa chọn từ nào!", "warning");
+        return;
+    }
+
+    const btn = document.getElementById("btn-save-summary");
+    btn.textContent = "⏳ Đang lưu...";
+    btn.disabled = true;
+
+    let successCount = 0;
+    
+    // Xử lý lưu
+    for (const cb of checkboxes) {
+        const idx = parseInt(cb.value);
+        const w = learnList[idx];
+        
+        const newWord = {
+            word: w.word, meaning: w.meaning, ipa: w.ipa, type: w.type, sentence: w.sentence,
+            folder: "Từ đã lưu", status: "new", dateAdded: new Date().toISOString().slice(0, 10)
+        };
+
+        try {
+            await sendWordToGoogleSheet_Add(newWord); // Gửi API
+            // Add local
+            userWords.push({...newWord, isSystem: false, canEdit: true, course: "Sổ tay"});
+            successCount++;
+        } catch(e) { console.error(e); }
+    }
+
+    btn.textContent = "💾 Lưu vào Sổ tay";
+    btn.disabled = false;
+    showToast(`Đã lưu ${successCount} từ!`, "success");
+    
+    // Refresh list để disable checkbox
+    renderSummaryListCheckboxes();
+    combineAndRenderWords(); // Update list chính
+}
+
+function closeSummaryView() {
+    // Quay về danh sách Topic
+    document.getElementById('topic-summary-view').style.display = 'none';
+    showSection('lessons');
+    
+    // Cập nhật lại thanh tiến độ Topic (vì vừa học xong)
+    // Tìm config của khóa hiện tại để reload
+    const currentCourseTitle = document.getElementById("current-course-title").textContent;
+    const config = COURSES_CONFIG.find(c => c.title === currentCourseTitle);
+    if(config) openCourseDetail(config);
+}
+function stopAutoPlayPopup() {
+    isJumpingMode = false;
+    
+    // Xóa các bộ đếm
+    clearInterval(jumpInterval);
+    clearInterval(countdownInterval);
+    
+    // Dừng đọc ngay lập tức
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+    // Đóng Modal
+    document.getElementById("auto-play-modal").style.display = "none";
+}
+function closeLearningMode() {
+
+    stopJumpingMode();
+    // Ẩn section học
+    document.getElementById('learning-section').style.display = 'none';
+    
+    // Hiện lại màn hình bài học & Topic List
+    document.getElementById('lessons-section').style.display = 'block';
+    
+    // Update lại thanh tiến độ Topic ở màn hình List (vì vừa học xong)
+    // Logic tìm config khóa học hiện tại để reload
+    const currentCourse = document.getElementById("current-course-title").textContent;
+    const config = COURSES_CONFIG.find(c => c.title === currentCourse);
+    if(config) openCourseDetail(config);
+}
+
+// Helper: Cập nhật số lượng đang chọn
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.summary-checkbox:checked');
+    document.getElementById('selected-count').textContent = `Đã chọn: ${checkboxes.length}`;
+}
+
+// Helper: Chọn tất cả
+
+
+// 1. Hàm Bắt đầu Game (Gọi từ menu)
+function startFillMode() {
+    // Ẩn các section khác, chỉ hiện game điền từ
+    document.querySelectorAll('section.card').forEach(el => el.style.display = 'none');
+    document.getElementById('review-section').style.display = 'block';
+    
+    // Ẩn menu con trong review, hiện game fill
+    document.getElementById('review-menu').style.display = 'none';
+    document.getElementById('mode-flashcard').style.display = 'none';
+    document.getElementById('mode-scramble').style.display = 'none';
+    document.getElementById('mode-fill').style.display = 'block';
+    document.getElementById('topic-summary-view').style.display = 'none';
+
+    // Nếu chưa có list review thì lấy random 10 từ
+    if (!reviewList || reviewList.length === 0) {
+        if(words.length > 0) {
+             reviewList = [...words].sort(() => Math.random() - 0.5).slice(0, 10);
+        } else {
+             showToast("Chưa có dữ liệu từ vựng!", "error");
+             return;
+        }
+    }
+    
+    currentReviewIdx = 0;
+    renderFillQuestion();
+}
+
+// 2. Render câu hỏi
 function renderFillQuestion() {
-    const w = reviewList[currentReviewIdx];
+    // Kiểm tra nếu hết câu hỏi
+    if (currentReviewIdx >= reviewList.length) {
+        showCelebration(); // <--- Gọi hàm chúc mừng thay vì showToast
+        return;
+    }
+
+    currentFillWordObj = reviewList[currentReviewIdx];
     
-    document.getElementById('fill-meaning').textContent = w.meaning;
-    document.getElementById('fill-folder').textContent = w.folder || "Chung";
-    
+    // Reset ô Input
     const input = document.getElementById('fill-input');
     input.value = "";
+    input.className = "fill-input"; // Xóa class correct/wrong cũ (trở về màu trắng)
     input.disabled = false;
-    input.focus();
     
-    const feedback = document.getElementById('fill-feedback');
-    feedback.textContent = "";
-    feedback.className = "feedback-msg";
+    // Gợi ý độ dài từ (Placeholder)
+    input.placeholder = `(${currentFillWordObj.word.length} ký tự) Gõ từ tiếng Anh...`;
+    
+    // Reset icon kết quả
+    const icon = document.getElementById('fill-status-icon');
+    if(icon) icon.style.display = 'none';
+    
+    // Hiển thị Nghĩa & IPA
+    document.getElementById('fill-mean').textContent = currentFillWordObj.meaning;
+    
+    // Nếu có thẻ IPA thì hiện, không thì thôi
+    const ipaEl = document.getElementById('fill-ipa');
+    if(ipaEl) ipaEl.textContent = currentFillWordObj.ipa || "";
+    
+    // Tự động focus để gõ luôn không cần bấm chuột
+    setTimeout(() => input.focus(), 100);
 }
 
+// 3. Kiểm tra đáp án
 function checkFillAnswer() {
-    const w = reviewList[currentReviewIdx];
     const input = document.getElementById('fill-input');
     const userVal = input.value.trim().toLowerCase();
-    const correctVal = w.word.trim().toLowerCase();
-    const feedback = document.getElementById('fill-feedback');
-
-    if (!userVal) return;
+    const correctVal = currentFillWordObj.word.toLowerCase();
+    
+    // Reset hiệu ứng rung lắc (để nếu sai tiếp nó vẫn rung lại)
+    input.classList.remove('wrong');
+    void input.offsetWidth; // Hack: Trigger reflow để reset animation
 
     if (userVal === correctVal) {
-        feedback.textContent = "🎉 Chính xác! " + w.word;
-        feedback.className = "feedback-msg correct";
-        input.disabled = true;
-        playPronunciation(w.word); 
+        // --- TRƯỜNG HỢP ĐÚNG ---
+        input.classList.add('correct'); // Chuyển xanh
+        input.disabled = true; // Khóa không cho sửa
+        
+        // Hiện icon check
+        const icon = document.getElementById('fill-status-icon');
+        if(icon) {
+            icon.textContent = "✅";
+            icon.style.display = "block";
+        }
+        
+        playPronunciation(correctVal); // Đọc từ
+        // showToast("Chính xác!", "success"); // Có thể bỏ nếu thấy phiền
+
+        // Tự động chuyển câu sau 1.2s (để người dùng kịp nhìn kết quả)
+        setTimeout(() => {
+            nextFillWord();
+        }, 1200);
+
     } else {
-        feedback.textContent = `Sai rồi. Đáp án đúng: ${w.word}`;
-        feedback.className = "feedback-msg wrong";
+        // --- TRƯỜNG HỢP SAI ---
+        input.classList.add('wrong'); // Chuyển đỏ & Rung lắc
+        showToast("Sai rồi, thử lại nhé!", "error");
+        input.focus();
     }
 }
 
-function nextFillQuestion() {
-    if (currentReviewIdx < reviewList.length - 1) {
-        currentReviewIdx++;
-        renderFillQuestion();
-    } else {
-        // THAY ALERT CŨ BẰNG HÀM MỚI
-        showCelebration();
-    }
+// 4. Chuyển câu tiếp theo
+function nextFillWord() {
+    currentReviewIdx++;
+    renderFillQuestion();
 }
 
-// Hỗ trợ nhấn Enter
-const fillEl = document.getElementById('fill-input');
-if (fillEl) {
-    fillEl.addEventListener("keypress", function(event) {
+const fillInputEl = document.getElementById('fill-input');
+if (fillInputEl) {
+    // Xóa listener cũ nếu có (để tránh bị double click - mẹo cloning)
+    const newEl = fillInputEl.cloneNode(true);
+    fillInputEl.parentNode.replaceChild(newEl, fillInputEl);
+    
+    newEl.addEventListener("keypress", function(event) {
         if (event.key === "Enter") {
+            event.preventDefault();
             checkFillAnswer();
         }
     });
+    // Gán lại ID để các hàm khác tìm thấy
+    newEl.id = "fill-input"; 
 }
 
 // ==========================================
 // SCRAMBLE GAME LOGIC (SẮP XẾP CHỮ)
 // ==========================================
-let scrambleCurrentAnswer = []; // Mảng lưu các ký tự người dùng đã xếp
-let scrambleOriginChars = [];   // Mảng lưu ký tự gốc (đã xáo trộn) để render Pool
 
-function renderScrambleGame() {
-    const w = reviewList[currentReviewIdx];
-    document.getElementById('scramble-meaning').textContent = w.meaning;
 
-    const feedback = document.getElementById('scramble-feedback');
-    feedback.textContent = "";
-    feedback.className = "feedback-msg";
-    document.getElementById('scramble-answer-zone').className = "scramble-slots";
-
-    // 1. Chuẩn bị từ vựng: Xóa khoảng trắng, đưa về chữ hoa
-    const cleanWord = w.word.replace(/\s+/g, '').toUpperCase();
+function startScrambleMode() {
+    // Ẩn các mode khác
+    document.querySelectorAll('section.card').forEach(el => el.style.display = 'none');
+    document.getElementById('review-section').style.display = 'block';
     
-    // 2. Tạo mảng ký tự và xáo trộn
-    // Mẹo: map về object có id để phân biệt các chữ cái giống nhau (vd: 2 chữ P trong APPLE)
-    scrambleOriginChars = cleanWord.split('').map((char, index) => ({
-        id: index,
-        char: char
-    }));
-    
-    // Xáo trộn (Shuffle)
-    scrambleOriginChars.sort(() => Math.random() - 0.5);
+    document.getElementById('review-menu').style.display = 'none';
+    document.getElementById('mode-flashcard').style.display = 'none';
+    document.getElementById('mode-fill').style.display = 'none';
+    document.getElementById('topic-summary-view').style.display = 'none';
+    document.getElementById('mode-scramble').style.display = 'block';
 
-    scrambleCurrentAnswer = []; // Reset câu trả lời
-    renderScrambleUI();
-}
-
-function renderScrambleUI() {
-    const poolEl = document.getElementById('scramble-pool');
-    const answerEl = document.getElementById('scramble-answer-zone');
-    
-    poolEl.innerHTML = "";
-    answerEl.innerHTML = "";
-
-    // Render Pool (Các chữ cái bên dưới)
-    scrambleOriginChars.forEach(item => {
-        const btn = document.createElement("div");
-        btn.className = "letter-tile";
-        btn.textContent = item.char;
-        
-        // Kiểm tra xem ký tự này đã được chọn lên trên chưa
-        const isSelected = scrambleCurrentAnswer.find(a => a.id === item.id);
-        if (isSelected) {
-            btn.classList.add("used"); // Ẩn đi nếu đã chọn
+    // Tạo list câu hỏi nếu chưa có
+    if (!reviewList || reviewList.length === 0) {
+        if(words.length > 0) {
+             reviewList = [...words].sort(() => Math.random() - 0.5).slice(0, 10);
         } else {
-            // Sự kiện: Bấm vào Pool -> Bay lên Answer
-            btn.onclick = () => {
-                scrambleCurrentAnswer.push(item);
-                renderScrambleUI(); // Vẽ lại
-            };
+             showToast("Chưa có dữ liệu từ vựng!", "error");
+             return;
         }
-        poolEl.appendChild(btn);
-    });
-
-    // Render Answer Zone (Các chữ cái đã chọn)
-    scrambleCurrentAnswer.forEach((item, index) => {
-        const btn = document.createElement("div");
-        btn.className = "letter-tile";
-        btn.textContent = item.char;
-        
-        // Sự kiện: Bấm vào Answer -> Trả về Pool
-        btn.onclick = () => {
-            scrambleCurrentAnswer.splice(index, 1); // Xóa khỏi answer
-            renderScrambleUI(); // Vẽ lại
-        };
-        answerEl.appendChild(btn);
-    });
-}
-
-function resetScramble() {
-    scrambleCurrentAnswer = [];
-    renderScrambleUI();
-    document.getElementById('scramble-feedback').textContent = "";
-    document.getElementById('scramble-answer-zone').className = "scramble-slots";
-}
-
-function checkScrambleAnswer() {
-    const w = reviewList[currentReviewIdx];
-    const cleanWord = w.word.replace(/\s+/g, '').toUpperCase();
+    }
     
-    // Ghép các ký tự user chọn thành chuỗi
-    const userAnswer = scrambleCurrentAnswer.map(i => i.char).join('');
-    const feedback = document.getElementById('scramble-feedback');
-    const zone = document.getElementById('scramble-answer-zone');
+    currentReviewIdx = 0;
+    renderScrambleQuestion();
+}
 
-    if (userAnswer === cleanWord) {
-        feedback.textContent = "🎉 Chính xác! " + w.word;
-        feedback.className = "feedback-msg correct";
-        zone.classList.add("correct");
-        playPronunciation(w.word);
+function renderScrambleQuestion() {
+    if (currentReviewIdx >= reviewList.length) {
+        showCelebration(); // <--- Gọi hàm chúc mừng thay vì showToast
+        backToReviewMenu();
+        return;
+    }
+
+    currentScrambleWordObj = reviewList[currentReviewIdx];
+    const correctWord = currentScrambleWordObj.word.toUpperCase(); // Chuẩn hóa về chữ hoa
+    
+    // Reset dữ liệu
+    scrambleUserAnswer = new Array(correctWord.length).fill(null); // Mảng rỗng độ dài bằng từ
+    
+    document.getElementById('scramble-mean').textContent = currentScrambleWordObj.meaning;
+    document.getElementById('scramble-feedback').textContent = "Bấm vào chữ cái để sắp xếp";
+    document.getElementById('scramble-feedback').style.color = "#64748b";
+
+    // 1. RENDER CÁC Ô TRỐNG (SLOTS)
+    const slotsArea = document.getElementById('scramble-slots-area');
+    slotsArea.innerHTML = "";
+    
+    for (let i = 0; i < correctWord.length; i++) {
+        const slot = document.createElement("div");
+        slot.className = "scramble-slot";
+        slot.dataset.index = i; // Lưu vị trí
+        
+        // Sự kiện: Bấm vào ô để xóa chữ (Undo)
+        slot.onclick = () => undoScrambleLetter(i);
+        
+        slotsArea.appendChild(slot);
+    }
+
+    // 2. RENDER CÁC KÝ TỰ ĐẢO LỘN (POOL)
+    const poolArea = document.getElementById('scramble-pool-area');
+    poolArea.innerHTML = "";
+    
+    // Tách từ thành mảng và xáo trộn
+    let chars = correctWord.split("");
+    // Thuật toán xáo trộn Fisher-Yates
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+
+    chars.forEach((char, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "pool-btn";
+        btn.textContent = char;
+        btn.dataset.char = char;
+        btn.dataset.poolId = idx; // ID duy nhất để biết nút nào đã bấm
+        
+        // Sự kiện: Chọn ký tự
+        btn.onclick = () => selectScrambleLetter(char, idx, btn);
+        
+        poolArea.appendChild(btn);
+    });
+}
+
+// Xử lý khi chọn 1 ký tự từ Pool
+function selectScrambleLetter(char, poolId, btnElement) {
+    const correctWord = currentScrambleWordObj.word.toUpperCase();
+    
+    // 1. Tìm ô trống đầu tiên
+    const emptyIndex = scrambleUserAnswer.findIndex(val => val === null);
+    
+    if (emptyIndex === -1) return; // Đã đầy ô
+
+    // 2. Điền vào mảng dữ liệu
+    scrambleUserAnswer[emptyIndex] = { char: char, poolId: poolId };
+    
+    // 3. Cập nhật giao diện Ô Slot
+    const slots = document.querySelectorAll('.scramble-slot');
+    const targetSlot = slots[emptyIndex];
+    
+    targetSlot.textContent = char;
+    targetSlot.classList.add('filled');
+    
+    // 4. KIỂM TRA NGAY LẬP TỨC (Correct/Wrong)
+    const correctChar = correctWord[emptyIndex];
+    if (char === correctChar) {
+        targetSlot.classList.add('correct');
+        targetSlot.classList.remove('wrong');
     } else {
-        feedback.textContent = "Sai rồi, thử lại nhé!";
-        feedback.className = "feedback-msg wrong";
-        zone.classList.add("wrong");
-        // Hiệu ứng rung nhẹ nếu muốn (optional)
-        setTimeout(() => zone.classList.remove("wrong"), 500);
+        targetSlot.classList.add('wrong');
+        targetSlot.classList.remove('correct');
+        
+        // Rung nhẹ điện thoại nếu sai (nếu thiết bị hỗ trợ)
+        if(navigator.vibrate) navigator.vibrate(50);
+    }
+
+    // 5. Ẩn nút ở Pool đi
+    btnElement.classList.add('used');
+
+    // 6. Kiểm tra xem đã xong chưa
+    checkScrambleWin();
+}
+
+// Xử lý khi bấm vào ô Slot để trả lại ký tự (Undo)
+function undoScrambleLetter(index) {
+    const data = scrambleUserAnswer[index];
+    if (!data) return; // Ô đang trống
+
+    // 1. Reset ô Slot
+    const slots = document.querySelectorAll('.scramble-slot');
+    const targetSlot = slots[index];
+    
+    targetSlot.textContent = "";
+    targetSlot.className = "scramble-slot"; // Reset hết class màu
+    
+    // 2. Hiện lại nút ở Pool
+    // Tìm nút có poolId tương ứng để hiện lại
+    const poolBtns = document.querySelectorAll('.pool-btn');
+    poolBtns.forEach(btn => {
+        if (btn.dataset.poolId == data.poolId) {
+            btn.classList.remove('used');
+        }
+    });
+
+    // 3. Xóa khỏi mảng dữ liệu
+    scrambleUserAnswer[index] = null;
+    
+    // (Logic nâng cao: Nếu xóa ô giữa, có thể cần dồn các ô sau lên, 
+    // nhưng để đơn giản ta cứ để trống ô đó chờ điền lại)
+}
+
+function checkScrambleWin() {
+    // Kiểm tra xem mảng đã đầy chưa và có ô nào sai không
+    const isFull = scrambleUserAnswer.every(val => val !== null);
+    if (!isFull) return;
+
+    const correctWord = currentScrambleWordObj.word.toUpperCase();
+    
+    // Kiểm tra từng ký tự
+    let isAllCorrect = true;
+    scrambleUserAnswer.forEach((item, idx) => {
+        if (item.char !== correctWord[idx]) isAllCorrect = false;
+    });
+
+    if (isAllCorrect) {
+        // --- CHIẾN THẮNG ---
+        const fb = document.getElementById('scramble-feedback');
+        fb.textContent = "Chính xác! 🎉";
+        fb.style.color = "#16a34a";
+        
+        playPronunciation(currentScrambleWordObj.word);
+
+        // Tự động chuyển sau 1s
+        setTimeout(() => {
+            nextScrambleWord();
+        }, 1000);
+    } else {
+        // Nếu đầy mà vẫn sai -> Báo lỗi
+        const fb = document.getElementById('scramble-feedback');
+        fb.textContent = "Chưa đúng, hãy sửa các ô màu đỏ!";
+        fb.style.color = "#ef4444";
     }
 }
 
-function nextScrambleQuestion() {
-    if (currentReviewIdx < reviewList.length - 1) {
-        currentReviewIdx++;
-        renderScrambleGame();
-    } else {
-        showCelebration(); // Gọi hiệu ứng pháo giấy chiến thắng
-    }
+function nextScrambleWord() {
+    currentReviewIdx++;
+    renderScrambleQuestion();
 }
 
 // ==========================================
@@ -2636,7 +3096,7 @@ function startLoaderSystem() {
             // Fade in
             tipTextEl.classList.remove("fade-out");
         }, 500); // Khớp với transition CSS
-    }, 2500);
+    }, 1500);
 
     // 3. Giả lập thanh Progress chạy từ từ đến 90% (để người dùng đỡ sốt ruột)
     // Nếu mạng nhanh thì nó sẽ nhảy vọt lên 100% khi xong.
@@ -2683,10 +3143,10 @@ const SEASONAL_CONFIG = [
     
     { name: "Christmas",     month: 12, day: 25, icon: "❄️", duration: 7 }, // Tuyết rơi
     { name: "NewYear",       month: 1,  day: 1,  icon: "✨", duration: 3 }, // Pháo hoa/Lấp lánh
-    { name: "Tet_2025",      month: 1,  day: 29, icon: "🌸", duration: 10 }, // Tết Âm 2025 (Cần cập nhật hàng năm)
+    { name: "Tet_2025",      month: 2,  day: 17, icon: "🌸", duration: 10 }, // Tết Âm 2025 (Cần cập nhật hàng năm)
     { name: "Valentine",     month: 2,  day: 14, icon: "❤️", duration: 3 }, // Tim bay
     { name: "Halloween",     month: 10, day: 31, icon: "🎃", duration: 5 }, // Bí ngô
-    { name: "HungKings",     month: 4,  day: 6,  icon: "🇻🇳", duration: 1 }, // Giỗ tổ (10/3 Âm - Ví dụ năm 2025 là 6/4 Dương)
+    { name: "HungKings",     month: 4,  day: 26,  icon: "🇻🇳", duration: 1 }, // Giỗ tổ (10/3 Âm - Ví dụ năm 2025 là 6/4 Dương)
 ];
 
 const PET_ASSETS = [
@@ -3130,6 +3590,46 @@ async function sendWordToGoogleSheet(wordDataInput = null) {
         return { status: "error", message: error.message };
     }
 }
+
+// 1. Tải danh sách giọng đọc
+function loadVoiceOptions() {
+    availableVoices = window.speechSynthesis.getVoices();
+    const voiceSelect = document.getElementById("voice-select");
+    if (!voiceSelect) return;
+
+    // Lọc lấy các giọng tiếng Anh (en)
+    const enVoices = availableVoices.filter(v => v.lang.includes('en'));
+
+    voiceSelect.innerHTML = enVoices.map(v => 
+        `<option value="${v.name}" ${v.name === localStorage.getItem("pref_voice") ? 'selected' : ''}>
+            ${v.name}
+        </option>`
+    ).join('');
+
+    // Load tốc độ đã lưu
+    const savedSpeed = localStorage.getItem("pref_speed");
+    if (savedSpeed) {
+        document.getElementById("voice-speed").value = savedSpeed;
+        document.getElementById("speed-val").innerText = savedSpeed;
+    }
+}
+
+// Lắng nghe sự kiện thay đổi giọng của hệ thống
+window.speechSynthesis.onvoiceschanged = loadVoiceOptions;
+
+// 2. Lưu cài đặt khi người dùng thay đổi
+document.addEventListener("change", (e) => {
+    if (e.target.id === "voice-select") {
+        localStorage.setItem("pref_voice", e.target.value);
+    }
+    if (e.target.id === "voice-speed") {
+        localStorage.setItem("pref_speed", e.target.value);
+    }
+});
+
+function testCurrentVoice() {
+    playPronunciation("Welcome to TNC English. This is a voice test.");
+}
 // ===== INIT =====
 function initStatusSelectOptions() {
     if (!statusSelect) return;
@@ -3142,6 +3642,528 @@ function initStatusSelectOptions() {
         statusSelect.appendChild(opt);
     });
 }
+
+// Cấu hình các khóa học (Level 1)
+const COURSES_CONFIG = [
+    {
+        id: "basic_1000",
+        title: "1000 Từ Cơ Bản",
+        sheetName: "Basic 1000", // Giống cột G
+        desc: "Từ vựng nền tảng giao tiếp hàng ngày",
+        icon: "🎯",
+        bgClass: "bg-blue"
+    },
+    {
+        id: "toeic_course",
+        title: "Các câu thành ngữ tục ngữ",
+        sheetName: "Idiom",      // Giống cột G
+        desc: "Câu thành ngữ tục ngữ phổ biến",
+        icon: "📝",
+        bgClass: "bg-orange"
+    }
+    // Bạn có thể thêm khóa IELTS, giao tiếp... vào đây
+];
+// Hàm Render Level 1: Danh sách Khóa học
+function renderCourses() {
+    words = systemWords;
+    const container = document.getElementById("course-list-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    COURSES_CONFIG.forEach(config => {
+        // 1. Lọc từ thuộc khóa này
+        const courseWords = words.filter(w => w.course === config.sheetName);
+        const total = courseWords.length;
+
+        // 2. Tính tổng số đã xem (Cộng dồn các topic con)
+        let totalViewed = 0;
+        // Lấy danh sách các topic duy nhất trong khóa này
+        const uniqueTopics = [...new Set(courseWords.map(w => w.folder))];
+        
+        uniqueTopics.forEach(topic => {
+            totalViewed += (viewedCountMap[topic] || 0);
+        });
+
+        const percent = total === 0 ? 0 : Math.floor((totalViewed / total) * 100);
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.onclick = () => openCourseDetail(config);
+
+        div.innerHTML = `
+            <div class="lesson-header">
+                <div class="lesson-icon-box ${config.bgClass}">${config.icon}</div>
+                <div class="lesson-info">
+                    <h3 class="lesson-title">${config.title}</h3>
+                    <p class="lesson-desc">${total} từ • ${uniqueTopics.length} chủ đề</p>
+                </div>
+            </div>
+            <div class="lesson-progress-wrapper">
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: ${percent}%"></div>
+                </div>
+                <div class="progress-stats" style="margin-top:6px;">
+                    <span>Đã xem: ${totalViewed}/${total}</span>
+                    <span style="color:#3b82f6; font-weight:bold;">${percent}%</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function markAsViewed(wordObj) {
+    if (!wordObj) return;
+
+    // Lấy Topic (Cột F)
+    const topic = wordObj.folder || "Chưa phân loại";
+    // Tạo key duy nhất để trong 1 phiên không bị cộng dồn liên tục
+    const key = topic + "_" + wordObj.word;
+
+    // Nếu trong phiên này đã xem rồi -> Bỏ qua
+    if (sessionViewedSet.has(key)) return;
+
+    // Nếu chưa xem -> Đánh dấu
+    sessionViewedSet.add(key);
+
+    // Khởi tạo đếm nếu chưa có
+    if (!viewedCountMap[topic]) viewedCountMap[topic] = 0;
+
+    // Kiểm tra giới hạn (Không được vượt quá tổng số từ của topic)
+    const maxWords = words.filter(w => w.folder === topic).length;
+    
+    if (viewedCountMap[topic] < maxWords) {
+        viewedCountMap[topic]++; // Tăng 1
+        
+        // Lưu Local & Gửi Server
+        localStorage.setItem("viewed_count", JSON.stringify(viewedCountMap));
+        saveProgressToServer();
+        
+        // Nếu đang mở màn hình danh sách Topic -> Cập nhật thanh màu xanh ngay lập tức
+        updateTopicProgressBar(topic, viewedCountMap[topic], maxWords);
+    }
+}
+
+async function saveProgressToServer() {
+    if (!currentUser) return;
+    try {
+        await fetch(LOGIN_API_URL, {
+            method: "POST", mode: "cors",
+            body: JSON.stringify({
+                action: "saveProgress", // Khớp với Code.gs mới
+                email: currentUser.email,
+                progressData: JSON.stringify(viewedCountMap) // Gửi chuỗi {"Topic 1": 5...}
+            })
+        });
+        console.log("Đã đồng bộ tiến độ.");
+    } catch (e) { console.error(e); }
+}
+
+function updateTopicProgressBar(topicName, currentVal, maxVal) {
+    // Tìm thanh tiến độ của topic này trong DOM (nếu đang hiển thị)
+    // Cách đơn giản: Nếu đang ở view Topic, render lại list
+    const topicView = document.getElementById("topic-list-view");
+    if (topicView && topicView.style.display === "block") {
+        // Tìm khóa học đang mở để render lại đúng nó
+        const courseTitle = document.getElementById("current-course-title").textContent;
+        const config = COURSES_CONFIG.find(c => c.title === courseTitle);
+        if (config) {
+            // Render lại nhẹ nhàng (để cập nhật số)
+            renderTopicList(config); 
+        }
+    }
+}
+
+// Hàm Render Level 2: Danh sách Chủ đề (Khi bấm vào 1 khóa học)
+function openCourseDetail(config) {
+    // Chuyển View
+    document.getElementById("course-list-view").style.display = "none";
+    document.getElementById("topic-list-view").style.display = "block";
+    document.getElementById("current-course-title").textContent = config.title;
+
+    renderTopicList(config);
+}
+
+function renderTopicList(config) {
+    const container = document.getElementById("topic-list-container");
+    container.innerHTML = "";
+
+    // Lọc từ & Group theo Topic
+    const courseWords = words.filter(w => w.course === config.sheetName);
+    const topicMap = {};
+
+    courseWords.forEach(w => {
+        const t = w.folder || "Chưa phân loại";
+        if (!topicMap[t]) topicMap[t] = { name: t, total: 0, icon: getRandomEmoji(t) };
+        topicMap[t].total++;
+    });
+
+    // Sort Topic 1, Topic 2...
+    const sortedTopics = Object.values(topicMap).sort((a, b) => {
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+    
+    // Tính tổng progress cho Header
+    let grandTotal = 0;
+    let grandViewed = 0;
+
+    sortedTopics.forEach(topic => {
+        grandTotal += topic.total;
+        grandViewed += (viewedCountMap[topic.name] || 0);
+        
+        // --- RENDER TỪNG ITEM ---
+        const viewed = viewedCountMap[topic.name] || 0;
+        const percent = Math.floor((viewed / topic.total) * 100);
+        let color = "#60a5fa"; // Xanh dương
+        if(percent >= 100) color = "#10b981"; // Xanh lá
+
+        const div = document.createElement("div");
+        div.className = "topic-item";
+        div.onclick = () => {
+    // Gọi hàm mới vừa viết ở bước 1
+    startFlashcardFromTopic(topic.name);
+};
+
+        div.innerHTML = `
+            <div class="topic-content">
+                <div class="topic-icon">${topic.icon}</div>
+                <div class="topic-name">${topic.name}</div>
+            </div>
+            <div class="topic-progress-track">
+                <div class="topic-progress-fill" style="width: ${percent}%; background: ${color}"></div>
+            </div>
+            <div style="text-align:right; font-size:10px; color:#9ca3af; margin-top:4px;">
+                ${viewed}/${topic.total}
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    // Update Header Progress
+    const grandPercent = grandTotal === 0 ? 0 : Math.floor((grandViewed/grandTotal)*100);
+    document.getElementById("course-total-progress").style.width = `${grandPercent}%`;
+    document.getElementById("course-progress-text").textContent = `${grandViewed} / ${grandTotal}`;
+}
+
+// Hàm quay lại danh sách khóa học
+function backToCourses() {
+    document.getElementById("topic-list-view").style.display = "none";
+    document.getElementById("course-list-view").style.display = "block";
+}
+
+// Hàm helper sinh icon ngẫu nhiên dựa trên tên topic (để đỡ nhàm chán)
+function getRandomEmoji(str) {
+    const emojis = ["🐶", "🎨", "🍎", "🏠", "🏫", "👨‍👩‍👧", "🥞", "🚗", "⚽", "👗", "💻", "🌳"];
+    // Hash đơn giản từ string để icon cố định cho mỗi topic
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % emojis.length;
+    return emojis[index];
+}
+async function fetchSystemWords() {
+    // Gọi vào Script Login (Nơi chứa TemplateWord)
+    const url = `${LOGIN_API_URL}?action=getWords`;
+    console.log("⬇️ Đang tải từ vựng hệ thống...");
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === "success" && Array.isArray(data.words)) {
+            // Đánh dấu đây là từ hệ thống (isSystem = true)
+            systemWords = data.words.map(w => ({
+                ...w,
+                isSystem: true,      // Cờ đánh dấu: Đây là từ hệ thống
+                canEdit: false       // Không cho sửa/xóa
+            }));
+            console.log(`✅ Đã tải ${systemWords.length} từ hệ thống.`);
+        } else {
+            systemWords = [];
+        }
+    } catch (err) {
+        console.error("Lỗi tải từ hệ thống:", err);
+        systemWords = [];
+    }
+}
+
+async function fetchUserWords() {
+    if (!currentUser || !currentUser.email) return;
+    
+    // Gọi vào Script Sheet Cá nhân của người dùng (SHEET_WEB_APP_URL)
+    // URL này cần truyền email để sheet lọc đúng dòng của user (nếu dùng chung sheet)
+    // Hoặc chỉ đơn giản là GET nếu mỗi user 1 sheet riêng.
+    const url = `${SHEET_WEB_APP_URL}?userEmail=${encodeURIComponent(currentUser.email)}`;
+    console.log("⬇️ Đang tải từ vựng cá nhân...");
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === "success" && Array.isArray(data.words)) {
+            // Đánh dấu đây là từ cá nhân (isSystem = false)
+            userWords = data.words.map(w => ({
+                rowIndex: w.rowIndex || null,
+                word: w.word || "",
+                folder: w.folder || "",
+                ipa: w.ipa || "",
+                type: w.type || "",
+                meaning: w.meaning || "",
+                sentence: w.sentence || "",
+                dateAdded: w.dateAdded || "",
+                status: w.status || "",
+                isSystem: false,     // Cờ đánh dấu: Đây là từ cá nhân
+                canEdit: true,       // Cho phép sửa/xóa
+                course: "Sổ tay"     // Gom hết vào 1 khóa ảo tên là Sổ tay
+            }));
+            console.log(`✅ Đã tải ${userWords.length} từ cá nhân.`);
+        } else {
+            userWords = [];
+        }
+    } catch (err) {
+        console.error("Lỗi tải từ cá nhân:", err);
+        userWords = [];
+    }
+}
+
+function toggleRepeatOne() {
+    if (isRepeating) {
+        stopRepeatOne();
+    } else {
+        startRepeatOne();
+    }
+}
+
+function startRepeatOne() {
+    // 1. Tắt chế độ Auto Play ngẫu nhiên nếu đang chạy (để không bị đá nhau)
+    if (typeof isAutoPlaying !== 'undefined' && isAutoPlaying) {
+        stopAutoPlay();
+    }
+
+    isRepeating = true;
+    
+    // Đổi giao diện nút
+    const btn = document.getElementById("btn-repeat-one");
+    if (btn) {
+        btn.innerHTML = "⏹️ Dừng lặp";
+        btn.style.background = "#dbeafe"; // Xanh đậm hơn chút
+        btn.style.borderColor = "#2563eb";
+        btn.style.fontWeight = "700";
+    }
+
+    showToast("Bắt đầu lặp lại từ hiện tại...", "info");
+
+    // Đọc ngay lần đầu
+    speakCurrentWord();
+
+    // Lặp lại mỗi 2.5 giây (hoặc 3s tùy độ dài từ)
+    repeatInterval = setInterval(() => {
+        speakCurrentWord();
+    }, 1500); 
+}
+
+function stopRepeatOne() {
+    isRepeating = false;
+    clearInterval(repeatInterval);
+    
+    // Reset nút về ban đầu
+    const btn = document.getElementById("btn-repeat-one");
+    if (btn) {
+        btn.innerHTML = "🔁 Lặp từ này";
+        btn.style.background = "#eff6ff";
+        btn.style.borderColor = "#3b82f6";
+        btn.style.fontWeight = "400";
+    }
+}
+
+function speakCurrentWord() {
+    // Lấy từ đang hiển thị
+    // (Biến learnList và learnIdx đã có sẵn ở logic module học tập)
+    if (learnList && learnList[learnIdx]) {
+        playPronunciation(learnList[learnIdx].word);
+    }
+}
+
+function toggleJumpingMode() {
+    if (isJumpingMode) {
+        stopJumpingMode();
+    } else {
+        startJumpingMode();
+    }
+}
+
+function startJumpingMode() {
+    if (!learnList || learnList.length === 0) return;
+    
+    // Đổi giao diện nút
+    const btn = document.getElementById("btn-jumping-mode");
+    if(btn) {
+        btn.innerHTML = "⏹️ Dừng luyện tập";
+        btn.style.background = "#fce7f3";
+    }
+    
+    // Chạy logic nhảy với từ hiện tại của learnList
+    runSmartJumpingLogic(() => learnList[learnIdx]);
+}
+
+// 2. Bắt đầu chế độ
+function startReviewJumpingMode() {
+    if (!reviewList || reviewList.length === 0) return;
+
+    // Đổi giao diện nút
+    const btn = document.getElementById("btn-review-jumping");
+    if(btn) {
+        btn.innerHTML = "⏹️ Dừng luyện tập";
+        btn.style.background = "#fce7f3";
+    }
+
+    // Chạy logic nhảy với từ hiện tại của reviewList
+    runSmartJumpingLogic(() => reviewList[currentReviewIdx]);
+}
+
+function runSmartJumpingLogic(getWordFunc) {
+    isJumpingMode = true;
+
+    // Mở Modal
+    document.getElementById("auto-play-modal").style.display = "flex";
+    
+    // Reset thanh tiến độ
+    let timeLeft = 30;
+    const progressBar = document.getElementById("auto-play-progress");
+    progressBar.style.width = "100%";
+
+    // --- HÀM THỰC HIỆN 1 BƯỚC NHẢY ---
+    const jumpAndSpeak = () => {
+        if (!isJumpingMode) return;
+
+        // 1. Lấy từ cần hiển thị (thông qua hàm callback)
+        const w = getWordFunc(); 
+        if (!w) return;
+
+        // 2. Render lên thẻ
+        const el = document.getElementById("jumping-word-el");
+        document.getElementById("jump-word-text").textContent = w.word;
+        document.getElementById("jump-word-mean").textContent = w.meaning;
+
+        // 3. Tính vị trí ngẫu nhiên
+        const area = document.getElementById("jumping-area");
+        const maxX = area.clientWidth - el.offsetWidth - 20; 
+        const maxY = area.clientHeight - el.offsetHeight - 20;
+        const randX = Math.max(10, Math.floor(Math.random() * maxX));
+        const randY = Math.max(10, Math.floor(Math.random() * maxY));
+
+        el.style.left = randX + "px";
+        el.style.top = randY + "px";
+
+        // 4. PHÁT ÂM & ĐỢI (QUAN TRỌNG)
+        // Thay vì dùng playPronunciation(), ta tự tạo Utterance để bắt sự kiện onend
+        
+        window.speechSynthesis.cancel(); // Dừng các âm thanh cũ
+        currentUtterance = new SpeechSynthesisUtterance(w.word);
+        currentUtterance.lang = "en-US";
+        currentUtterance.rate = 0.9; // Đọc chậm một chút cho rõ
+        const selectedVoiceName = localStorage.getItem("pref_voice");
+        const selectedSpeed = localStorage.getItem("pref_speed") || 0.95;
+
+        if (selectedVoiceName) {
+        const voice = availableVoices.find(v => v.name === selectedVoiceName);
+        if (voice) currentUtterance.voice = voice;
+        currentUtterance.rate = selectedSpeed;
+        }
+        // KHI ĐỌC XONG -> Đợi 500ms rồi nhảy tiếp
+        currentUtterance.onend = () => {
+            if (isJumpingMode) {
+                // Đệ quy: Gọi lại chính nó sau khi nghỉ 0.5s
+                setTimeout(jumpAndSpeak, 500);
+            }
+        };
+
+        // Xử lý lỗi nếu máy không đọc được -> Vẫn nhảy sau 2s
+        currentUtterance.onerror = () => {
+            if (isJumpingMode) setTimeout(jumpAndSpeak, 2000);
+        };
+
+        window.speechSynthesis.speak(currentUtterance);
+    };
+
+    // Bắt đầu nhảy phát đầu tiên
+    jumpAndSpeak();
+
+    // --- ĐẾM NGƯỢC THỜI GIAN TỔNG (30s) ---
+    // Cái này chạy độc lập với việc nhảy
+    countdownInterval = setInterval(() => {
+        timeLeft--;
+        const pct = (timeLeft / 30) * 100;
+        progressBar.style.width = `${pct}%`;
+
+        if (timeLeft <= 0) {
+            stopJumpingMode();
+            showToast("🏁 Hoàn thành bài luyện tập!", "success");
+        }
+    }, 1000);
+}
+// 3. Dừng chế độ
+function stopJumpingMode() {
+    isJumpingMode = false;
+    
+    // 1. Xóa bộ đếm
+    clearInterval(jumpInterval);
+    clearInterval(countdownInterval);
+    
+    // 2. Dừng âm thanh
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+    // 3. Đóng Modal
+    document.getElementById("auto-play-modal").style.display = "none";
+
+    // 4. RESET NÚT BẤM (Phần quan trọng để sửa lỗi của bạn)
+    const btn = document.getElementById("btn-jumping-mode");
+    if(btn) {
+        btn.innerHTML = "⚡ Hack não từ này";
+        btn.style.background = "#fdf4ff"; // Trả lại màu hồng nhạt
+        btn.style.color = "#a21caf";
+        btn.style.border = "1px solid #d946ef";
+    }
+
+    const btnReview = document.getElementById("btn-review-jumping");
+    if(btnReview) {
+        btnReview.innerHTML = "⚡ Hack não từ này";
+        btnReview.style.background = "#fdf4ff";
+    }
+}
+
+// 4. Tự động tắt khi chuyển Tab (Visibility API)
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden && isJumpingMode) {
+        stopJumpingMode();
+        console.log("Tab ẩn -> Dừng luyện nghe.");
+        stopAutoPlayPopup();
+        showToast("Đã tạm dừng do chuyển tab.", "warning");
+    }
+});
+function combineAndRenderWords() {
+    
+    // Cập nhật thống kê
+    updateCount();
+    
+    // Render lại danh sách khóa học (Hệ thống)
+    renderCourses();
+    
+    // Nếu đang ở màn hình danh sách từ thì vẽ lại
+    const searchEl = document.getElementById("search-input");
+    renderWords(searchEl ? searchEl.value : "");
+}
+
+function toggleReviewJumpingMode() {
+    if (isJumpingMode) {
+        stopJumpingMode();
+    } else {
+        startReviewJumpingMode();
+    }
+}
+
+
 
 
 (async function init() {
@@ -3159,10 +4181,11 @@ function initStatusSelectOptions() {
         // (Thay vì await từng cái, ta dùng Promise.all)
         await Promise.all([
             syncAccountStatus(),
-            fetchWordsFromSheet(),
+            fetchSystemWords(),
+            fetchUserWords(),
             fetchIrregularVerbsFromSheet() // Tải sẵn cái này luôn cho nhanh
         ]);
-        
+        combineAndRenderWords();
         // Khởi tạo logic chạy ngầm
         startRealtimeLoop();
         startExpirationLoop();

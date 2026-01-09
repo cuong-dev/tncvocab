@@ -1903,6 +1903,7 @@ async function saveSelectedSummaryWords() {
     // Refresh list để disable checkbox
     renderSummaryListCheckboxes();
     combineAndRenderWords(); // Update list chính
+    words = systemWords;
 }
 
 function closeSummaryView() {
@@ -3490,10 +3491,10 @@ async function processAndSaveBulk() {
     btn.textContent = "⏳ Đang xử lý...";
     btn.disabled = true;
 
-    let targetFolder = "";
-    if (typeof activeFolder !== 'undefined' && activeFolder && activeFolder !== "ALL" && activeFolder !== "_NO_FOLDER_") {
-        targetFolder = activeFolder;
-    }
+    const folderInput = document.getElementById("bulk-folder"); // ID mới
+    const targetFolder = (folderInput && folderInput.value.trim()) 
+                         ? folderInput.value.trim() 
+                         : "Chung";
 
     let successCount = 0;
     let duplicateCount = 0;

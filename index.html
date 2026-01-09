@@ -80,7 +80,6 @@
             <!-- Thêm từ mới -->
             <section class="card">
 
-                
                 <div class="card-header-row">
                     <div>
                         <div class="card-title">Thêm từ mới</div>
@@ -820,7 +819,7 @@
     </div>
 </div>
 <div id="bulk-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal-card" style="width: 600px; max-width:95%; padding: 0; overflow: hidden;">
+    <div class="modal-card" style="width: 600px; max-width:95%;">
         
         <div class="modal-header-modern">
             <h3 class="modal-title-text">⚡ Thêm từ nhanh (qua Gemini Gem)</h3>
@@ -852,6 +851,21 @@
                         oninput="autoCheckJson()"></textarea>
                     <div id="json-status" class="validation-status"></div>
                 </div>
+                <div class="form-field" style="margin-top: 15px; margin-bottom: 15px;">
+                        <label for="bulk-folder" style="font-weight:600; color:#374151;">📂 Lưu tất cả vào Folder (nhóm / chủ đề)</label>
+                        
+                        <input type="text" 
+                            id="bulk-folder" 
+                            placeholder="Chọn hoặc nhập tên Folder mới..." 
+                            list="folder-list" 
+                            class="input-field" 
+                            style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px;">
+                            
+                        <datalist id="folder-list">
+                            </datalist>
+                        
+                </div>
+                
                 <div id="bulk-preview-area" style="display:none; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
                     
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">

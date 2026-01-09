@@ -746,6 +746,35 @@ html, body {
 /* ===============================
    BULK ADD MODAL STYLES
 =================================*/
+
+#bulk-modal .modal-card {
+    max-height: 90vh;       /* Chiều cao tối đa chỉ bằng 90% màn hình */
+    display: flex;          /* Sử dụng Flexbox */
+    flex-direction: column; /* Xếp dọc: Header -> Body -> Footer */
+    overflow: hidden;       /* Ẩn phần thừa loe ra ngoài bo góc */
+}
+
+#bulk-modal .modal-header-modern,
+#bulk-modal .modal-footer-modern {
+    flex-shrink: 0; /* Cố định kích thước */
+}
+
+/* 3. Phần Thân (Body) sẽ chiếm phần còn lại và cuộn độc lập */
+#bulk-modal .modal-body-modern {
+    flex: 1;              /* Tự động giãn để lấp đầy khoảng trống giữa Header và Footer */
+    overflow-y: auto;     /* Bật thanh cuộn dọc cho riêng phần này */
+    padding: 20px;        /* Padding bên trong */
+    min-height: 0;        /* Fix lỗi flexbox trên một số trình duyệt cũ */
+}
+
+/* Tùy chỉnh thanh cuộn cho đẹp hơn */
+#bulk-modal .modal-body-modern::-webkit-scrollbar {
+    width: 6px;
+}
+#bulk-modal .modal-body-modern::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
 .bulk-list-container {
     max-height: 400px;
     overflow-y: auto;

@@ -4499,106 +4499,105 @@ button:hover .inline-svg-icon {
     .tools-left {
         width: 100%;
     }
-/* 1. CONTAINER TỔNG: Cho phép cuộn trang tự nhiên */
+/* 1. CONTAINER CHÍNH: Cuộn toàn trang */
     #ranking-section {
-    /* SỬA LẠI DÒNG NÀY: */
-    display: flex; /* Bỏ !important, dùng flex để khớp với JS */
-    flex-direction: column; /* Xếp dọc nội dung */
-    
-    /* Các thuộc tính khác giữ nguyên */
-    height: auto !important;
-    min-height: 100vh;
-    background: #f9fafb !important;
-    padding: 10px 10px 120px 10px !important;
-    overflow-y: auto !important;
-}
-
-    /* 2. KHUNG LAYOUT: Xếp các khối dọc xuống */
-    .ranking-layout {
         display: flex;
         flex-direction: column;
-        gap: 20px;
-        width: 100%;
-        margin: 0;
-        padding: 0;
+        gap: 25px; /* Khoảng cách thoáng */
+        
+        height: auto;
+        min-height: 100vh;
+        padding: 15px 15px 120px 15px !important; 
+        background: #f9fafb !important;
+        
+        overflow-y: auto; /* Cuộn trang chính */
     }
 
-    /* --- KHỐI 1: HEATMAP (HOẠT ĐỘNG) --- */
+    .ranking-layout {
+        display: contents;
+    }
+
+    /* 2. HEATMAP: "Bung" tự nhiên */
     .ranking-sidebar {
-        order: 1; /* Hiển thị đầu tiên */
+        order: 1; 
         width: 100% !important;
-        flex: none; /* Không co giãn */
+        flex: none;
     }
-
     .widget-card.heatmap-card {
         width: 100%;
-        padding: 15px;
-        border-radius: 16px;
-        background: white;
-        /* Setup cuộn ngang cho biểu đồ */
-        display: block; 
         overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
+        display: block;
+        padding-bottom: 10px;
     }
 
-    .heatmap-wrapper {
-        min-width: 600px; /* Đảm bảo biểu đồ không bị bóp méo */
-        display: inline-block; /* Để wrapper hoạt động trong mode scroll */
-    }
-
-    /* --- KHỐI 2: BẢNG XẾP HẠNG (FIX CẨN THẬN) --- */
+    /* 3. BẢNG XẾP HẠNG: CỐ ĐỊNH CHIỀU CAO (Chỉ cái này bị co) */
     .leaderboard-panel {
-        order: 2; /* Hiển thị thứ hai */
+        order: 2;
         width: 100% !important;
         
-        /* CHIỀU CAO CỐ ĐỊNH AN TOÀN */
-        height: 550px !important; 
+        /* --- GIỚI HẠN CHIỀU CAO --- */
+        height: 500px !important; 
         
         background: white;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         
-        /* Cấu trúc Flex dọc để chia Header/Body/Footer */
+        /* Cấu trúc để cuộn nội bộ */
         display: flex !important;
         flex-direction: column !important;
-        overflow: hidden; /* Bo góc mượt mà */
+        overflow: hidden; 
     }
 
-    /* Header: Giữ nguyên */
+    /* Header & Footer Rank đứng yên */
     .lb-header {
-        flex: 0 0 auto; /* Không cho phép co lại */
-        height: 50px; /* Chiều cao cứng header */
-        display: flex;
-        align-items: center;
+        flex: 0 0 50px;
         border-bottom: 1px solid #f1f5f9;
-        background: #f8fafc;
+        background: #fff;
+        z-index: 2;
     }
-
-    /* Body: Danh sách cuộn (Phần hay bị lỗi trắng) */
-    .lb-body {
-        flex: 1 1 auto; /* Tự động chiếm hết khoảng trống còn lại */
-        height: auto;   /* Reset height */
-        overflow-y: auto; /* Cuộn dọc trong khu vực này */
-        min-height: 0;    /* QUAN TRỌNG: Fix lỗi Flexbox trên Safari/iOS */
-        display: block;   /* Đảm bảo render dạng khối */
-    }
-
-    /* Footer: Hạng của tôi */
     .lb-my-rank {
-        flex: 0 0 auto; /* Không cho phép co lại */
-        height: 60px;   /* Chiều cao cứng footer */
+        flex: 0 0 60px;
         border-top: 1px solid #f1f5f9;
-        background: white;
+        background: #fff;
         z-index: 5;
     }
 
-    /* --- KHỐI 3: CHAT --- */
-    .widget-card.chat-widget {
-        order: 3; /* Hiển thị cuối cùng */
-        width: 100% !important;
-        height: 500px !important; /* Chiều cao cố định cho khung chat */
-        margin: 0 !important;
+    /* Danh sách Rank cuộn bên trong + Chống trôi trang */
+    .lb-body {
+        flex: 1;
+        overflow-y: auto;
+        overscroll-behavior-y: contain; /* QUAN TRỌNG: Giữ cuộn trong khung */
+        padding-bottom: 0;
     }
 
+    /* 4. CHAT WIDGET: "BUNG" TỰ DO (Auto Height) */
+    .widget-card.chat-widget {
+        order: 3;
+        width: 100% !important;
+        margin: 0 !important;
+        
+        /* --- KHÔNG GIỚI HẠN CHIỀU CAO --- */
+        height: auto !important; 
+        min-height: 400px; /* Đặt chiều cao tối thiểu cho đẹp */
+        
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    /* Vùng tin nhắn sẽ dãn khung chat ra bao nhiêu tùy thích */
+    .chat-messages {
+        flex: 1; 
+        height: 400px; /* Chiều cao mặc định vùng hiển thị tin nhắn */
+        overflow-y: auto; /* Vẫn cho cuộn tin nhắn nếu quá dài để không chiếm hết màn hình */
+        /* Nếu bạn muốn Chat bung hết cỡ mà không cần cuộn thì đổi thành:
+           height: auto; overflow: visible; 
+        */
+    }
+    
+    .chat-input-area {
+        flex: 0 0 auto;
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #f1f5f9;
+    }
 }

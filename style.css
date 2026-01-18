@@ -4553,7 +4553,7 @@ button:hover .inline-svg-icon {
     
         
         /* Cố định chiều cao khung Chat */
-        height: 200px !important; 
+        height: 500px !important; 
         
         display: flex !important;
         flex-direction: column !important;
@@ -4562,7 +4562,15 @@ button:hover .inline-svg-icon {
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     
-
+    /* --- SỬA TÊN CLASS TẠI ĐÂY: .chat-content --- */
+    /* Đây là class trong HTML của bạn, nó sẽ nhận lệnh cuộn */
+    .chat-content {
+        flex: 1; /* Tự động chiếm hết khoảng trống */
+        
+        overflow-y: auto; /* Kích hoạt thanh cuộn */
+        padding: 15px;
+        
+    }
     
     .chat-input-area {
         flex: 0 0 auto;

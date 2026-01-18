@@ -4139,6 +4139,26 @@ button:hover .inline-svg-icon {
     }
 
 }
+
+/* 1. Áp dụng cho khung Chat và Bảng xếp hạng */
+.chat-content::-webkit-scrollbar,
+.lb-body::-webkit-scrollbar {
+    width: 5px; /* Độ rộng thanh cuộn (nhỏ thôi cho tinh tế) */
+    display: block !important; /* Bắt buộc hiện */
+}
+
+/* 2. Màu của thanh trượt (Cục di chuyển) */
+.chat-content::-webkit-scrollbar-thumb,
+.lb-body::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* Màu xám nhạt */
+    border-radius: 10px;       /* Bo tròn 2 đầu */
+}
+
+/* 3. Màu nền đường ray (Tùy chọn, thường để trong suốt) */
+.chat-content::-webkit-scrollbar-track,
+.lb-body::-webkit-scrollbar-track {
+    background: transparent; 
+}
 @media (max-width: 768px) {
     
    /* Trả lại quyền cuộn cho body trên mobile */
@@ -4499,31 +4519,22 @@ button:hover .inline-svg-icon {
     .tools-left {
         width: 100%;
     }
-/* 1. CONTAINER CHÍNH */
+/* ... (Các phần container, ranking, heatmap giữ nguyên như cũ) ... */
     #ranking-section {
         display: flex;
         flex-direction: column;
         gap: 30px;
-        
         height: auto !important;
         min-height: 100vh;
-        overflow-y: visible !important; /* Cuộn trang tự nhiên */
-        
+        overflow-y: visible !important;
         padding: 15px 15px 150px 15px !important; 
         background: #f9fafb !important;
     }
-
     .ranking-layout { display: contents; }
+    .ranking-sidebar { order: 1; width: 100% !important; flex: none; }
+    .widget-card.heatmap-card { width: 100%; overflow-x: auto; display: block; padding-bottom: 10px; }
 
-    /* 2. HEATMAP */
-    .ranking-sidebar {
-        order: 1; width: 100% !important; flex: none;
-    }
-    .widget-card.heatmap-card {
-        width: 100%; overflow-x: auto; display: block; padding-bottom: 10px;
-    }
-
-    /* 3. BẢNG XẾP HẠNG (CỐ ĐỊNH 500PX) */
+    /* BẢNG XẾP HẠNG (Giữ nguyên) */
     .leaderboard-panel {
         order: 2;
         width: 100% !important;
@@ -4535,47 +4546,15 @@ button:hover .inline-svg-icon {
         flex-direction: column !important;
         overflow: hidden; 
     }
-
     .lb-header { flex: 0 0 50px; border-bottom: 1px solid #f1f5f9; background: #fff; z-index: 2; }
     .lb-my-rank { flex: 0 0 60px; border-top: 1px solid #f1f5f9; background: #fff; z-index: 5; }
+    .lb-body { flex: 1; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 0; }
 
-    .lb-body {
-        flex: 1;
-        overflow-y: auto;
-        overscroll-behavior-y: contain; 
-        padding-bottom: 0;
-    }
-
-    /* 4. CHAT WIDGET (CỐ ĐỊNH 500PX) */
-    .widget-card.chat-widget {
-        order: 3;
-        width: 100% !important;
     
-        
-        /* Cố định chiều cao khung Chat */
-        height: 500px !important; 
-        
-        display: flex !important;
-        flex-direction: column !important;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    
-    /* --- SỬA TÊN CLASS TẠI ĐÂY: .chat-content --- */
-    /* Đây là class trong HTML của bạn, nó sẽ nhận lệnh cuộn */
-    .chat-content {
-        flex: 1; /* Tự động chiếm hết khoảng trống */
-        
-        overflow-y: auto; /* Kích hoạt thanh cuộn */
-        padding: 15px;
-        
-    }
     
     .chat-input-area {
         flex: 0 0 auto;
         padding: 15px;
         background: white;
-        border-top: 1px solid #f1f5f9;
     }
 }

@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbwKj6KkMYpMZn9uX17Mp4h7vuvANKJPScE4JTaZiNq9p6_gCSPcT7HK65Nd0iW7IA7Q/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzsDGNhF8ZMzvIBq76E297c7mctGk_ubfbx42kIcB8rT9cP1L2aBFgmTJMAB0_TJ3N6/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
@@ -11,6 +11,67 @@ const STATUS_CONFIG = [
     // ví dụ thêm status mới:
     // { value: "forgot",   label: "Quên rồi",       className: "status-forgot" },
 ];
+
+// --- KHO SVG ICONS ---
+const SVG_ICONS = {
+    // Top 1 - Vàng (Có gradient bóng)
+    MEDAL_1: `<svg class="medal-svg icon-gold" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="goldGrad" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#FBBF24"/> <stop offset="0.4" stop-color="#F59E0B"/> <stop offset="1" stop-color="#B45309"/>
+            </linearGradient>
+            <linearGradient id="ribbonGrad" x1="24" y1="4" x2="24" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#EF4444"/> <stop offset="1" stop-color="#B91C1C"/>
+            </linearGradient>
+        </defs>
+        <path d="M16 4H32L28 20H20L16 4Z" fill="url(#ribbonGrad)"/>
+        <circle cx="24" cy="28" r="12" fill="url(#goldGrad)"/>
+        <circle cx="24" cy="28" r="9" stroke="#FDE68A" stroke-width="2" stroke-opacity="0.5"/>
+        <path d="M23 24V32M23 24L21 26" stroke="#FFFBEB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    // Top 2 - Bạc
+    MEDAL_2: `<svg class="medal-svg icon-silver" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="silverGrad" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#E2E8F0"/> <stop offset="0.5" stop-color="#94A3B8"/> <stop offset="1" stop-color="#475569"/>
+            </linearGradient>
+            <linearGradient id="ribbonSilver" x1="24" y1="4" x2="24" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3B82F6"/> <stop offset="1" stop-color="#1D4ED8"/>
+            </linearGradient>
+        </defs>
+        <path d="M16 4H32L28 20H20L16 4Z" fill="url(#ribbonSilver)"/>
+        <circle cx="24" cy="28" r="11" fill="url(#silverGrad)"/>
+        <circle cx="24" cy="28" r="8" stroke="#F1F5F9" stroke-width="2" stroke-opacity="0.5"/>
+        <path d="M21 26C21 24.5 22.5 24 24 24C25.5 24 27 24.5 27 26C27 27.5 25 29 24 30L21 33H27" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    // Top 3 - Đồng
+    MEDAL_3: `<svg class="medal-svg icon-bronze" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="bronzeGrad" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#FDBA74"/> <stop offset="0.5" stop-color="#EA580C"/> <stop offset="1" stop-color="#9A3412"/>
+            </linearGradient>
+            <linearGradient id="ribbonBronze" x1="24" y1="4" x2="24" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10B981"/> <stop offset="1" stop-color="#047857"/>
+            </linearGradient>
+        </defs>
+        <path d="M16 4H32L28 20H20L16 4Z" fill="url(#ribbonBronze)"/>
+        <circle cx="24" cy="28" r="10" fill="url(#bronzeGrad)"/>
+        <circle cx="24" cy="28" r="7" stroke="#FED7AA" stroke-width="2" stroke-opacity="0.3"/>
+        <path d="M21 25H26L23 28C25 28 27 29 27 30.5C27 32 25.5 33 24 33C22.5 33 21.5 32.5 21 32" stroke="#FFF7ED" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    // Ngọn lửa
+    FIRE: `<svg class="fire-svg" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.5602 11.0287C14.7776 10.3762 14.7628 9.68067 14.5186 9.03752C14.4952 8.97576 14.5323 8.90743 14.595 8.89163C15.9327 8.55462 17.394 9.68536 17.7725 11.0772C18.156 12.4877 17.7126 14.0044 16.7909 15.068C16.3276 15.6027 15.759 16.0354 15.1189 16.3283C14.4788 16.6212 13.7827 16.7674 13.0792 16.7565C12.3756 16.7456 11.6816 16.5779 11.0461 16.2652C10.4106 15.9525 9.84903 15.5024 9.40101 14.9471C8.31825 13.605 8.01991 11.7828 8.60424 10.1517C8.62589 10.0913 8.56382 10.0351 8.50577 10.0617C7.26656 10.63 6.31502 11.7601 6.04657 13.1091C5.77812 14.4581 6.22019 15.8821 7.21043 16.9023C7.70817 17.4151 8.31294 17.817 8.98306 18.0805C9.65319 18.3441 10.3727 18.4629 11.0924 18.4287C11.8122 18.3945 12.5152 18.2081 13.1531 17.8823C13.791 17.5566 14.3489 17.0991 14.7884 16.5415C15.6675 15.4262 16.0594 13.9996 15.8617 12.5857C15.7629 11.8787 15.5134 11.1996 15.1326 10.5997L14.5602 11.0287Z" />
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C10.5 4.5 8 7 8 10C8 13.5 10.5 15 12 18C13.5 15 16 13.5 16 10C16 7 13.5 4.5 12 2ZM12 15C11.5 14 10.5 13 10.5 11C10.5 10 11 9 12 7.5C13 9 13.5 10 13.5 11C13.5 13 12.5 14 12 15Z" />
+    </svg>`
+};
+
+
+
+const ADMIN_EMAILS = ["admin@tncenglish.com", "cuongtn2604@gmail.com"];
 
 let systemWords = []; // Từ thuộc khóa học (Template)
 let userWords = [];   // Từ người dùng tự thêm (Sổ tay)
@@ -460,7 +521,7 @@ function renderFolderFilters() {
     // 2. Nút "Chưa phân loại"
     if (noFolderCount > 0) {
         const isNoFolderActive = (activeFolder === "_NO_FOLDER_");
-        folderFilterRow.appendChild(createBtn(`📂 Chưa phân loại (${noFolderCount})`, isNoFolderActive, () => {
+        folderFilterRow.appendChild(createBtn(`Chưa phân loại (${noFolderCount})`, isNoFolderActive, () => {
             activeFolder = "_NO_FOLDER_";
             currentPage = 1;
             renderFolderFilters();
@@ -564,12 +625,17 @@ function renderUserStatus() {
     // 2. Trạng thái (VIP/Trial/Expired)
     let badgeHtml = "";
     if (!isPaidExpired()) {
-        badgeHtml = `<span class="status-tag tag-active" style="font-size:12px; padding:4px 8px;">✨ Tài khoản VIP</span>`;
+        badgeHtml = `<span class="status-tag tag-active" style="font-size:12px; padding:4px 8px;"><svg class="icon-svg-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                                    </svg> Tài khoản VIP</span>`;
     } else if (isTrialActive()) {
         const left = getTrialRemainingTime();
         badgeHtml = `<span class="status-tag tag-trial" style="font-size:12px; padding:4px 8px;">⚡ Dùng thử: ${left}</span>`;
     } else {
-        badgeHtml = `<span class="status-tag tag-expired" style="font-size:12px; padding:4px 8px;">⛔ Hết hạn</span>`;
+        const expiredIcon = `<svg class="expired-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+</svg>`;
+        badgeHtml = `<span class="status-tag tag-expired" style="font-size:12px; padding:4px 8px;">${expiredIcon} Hết hạn</span>`;
     }
 
     if (badgeEl) badgeEl.innerHTML = badgeHtml;
@@ -619,31 +685,97 @@ function updateCount() {
 
 // streak
 function computeStreakDays(wordsArray) {
-    let earliest = null;
+    if (!wordsArray || wordsArray.length === 0) return 0;
 
-    for (const w of wordsArray) {
-        if (!w.dateAdded) continue;
+    // 1. Lấy danh sách các ngày ĐỘC NHẤT (Unique) mà người dùng có hoạt động
+    const activeDates = new Set();
+    
+    wordsArray.forEach(w => {
+        if (w.dateAdded) {
+            try {
+                const d = new Date(w.dateAdded);
+                // Chỉ lấy ngày hợp lệ
+                if (!isNaN(d.getTime())) {
+                    activeDates.add(toLocalYMD(d));
+                }
+            } catch (e) { }
+        }
+    });
 
-        const d = new Date(w.dateAdded);
-        if (isNaN(d.getTime())) continue;
+    if (activeDates.size === 0) return 0;
 
-        if (!earliest || d < earliest) {
-            earliest = d;
+    // 2. Xác định điểm bắt đầu kiểm tra
+    const today = new Date();
+    const todayStr = toLocalYMD(today);
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = toLocalYMD(yesterday);
+
+    let currentStreak = 0;
+    let checkDate = new Date(); // Biến con trỏ ngày để lùi dần
+
+    // LOGIC:
+    // - Nếu hôm nay có học -> Bắt đầu đếm từ hôm nay.
+    // - Nếu hôm nay chưa học, nhưng hôm qua có học -> Bắt đầu đếm từ hôm qua (Streak chưa mất).
+    // - Nếu cả hôm nay và hôm qua đều không -> Mất streak (Về 0).
+
+    if (activeDates.has(todayStr)) {
+        checkDate = today;
+    } else if (activeDates.has(yesterdayStr)) {
+        checkDate = yesterday;
+    } else {
+        return 0; // Rất tiếc, bạn đã làm đứt chuỗi
+    }
+
+    // 3. Vòng lặp đếm ngược
+    while (true) {
+        const dateStr = toLocalYMD(checkDate);
+        
+        if (activeDates.has(dateStr)) {
+            currentStreak++;
+            // Lùi về 1 ngày trước đó để kiểm tra tiếp
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            // Gặp ngày nghỉ -> Dừng đếm
+            break;
         }
     }
 
-    if (!earliest) return 0;
-
-    const today = new Date();
-
-    const start = new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate());
-    const end   = new Date(today.getFullYear(),   today.getMonth(),   today.getDate());
-
-    const diffMs   = end - start;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
-
-    return Math.max(diffDays, 1);
+    return currentStreak;
 }
+
+function toLocalYMD(dateObj) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+async function saveStreakToServer(days) {
+    if (!currentUser || !currentUser.email) return;
+
+    // Kiểm tra xem streak có thay đổi so với lần lưu trước không để tránh spam server
+    // (Lưu tạm vào biến global hoặc localStorage để so sánh nếu muốn tối ưu)
+    
+    try {
+        await fetch(LOGIN_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                action: "updateStreak",
+                email: currentUser.email,
+                streak: days
+            })
+        });
+        console.log(`✅ Đã lưu Streak (${days} ngày) lên Server.`);
+    } catch (e) {
+        console.error("Lỗi lưu Streak:", e);
+    }
+}
+
+
 
 function updateStreak() {
     // Tính toán streak
@@ -659,6 +791,33 @@ function updateStreak() {
     const profileStreakEl = document.getElementById("streak-count-val");
     if (profileStreakEl) {
         profileStreakEl.textContent = days;
+    }
+
+    const updateFireColor = (elementId) => {
+        const fireEl = document.getElementById(elementId);
+        if (!fireEl) return;
+
+        // Reset các class cũ
+        fireEl.classList.remove("fire-off", "fire-lvl-1", "fire-lvl-2", "fire-lvl-3");
+        
+        // Thêm class mới dựa trên số ngày
+        if (days === 0) {
+            fireEl.classList.add("fire-off"); // Xám (Mất chuỗi)
+        } else if (days <= 3) {
+            fireEl.classList.add("fire-lvl-1"); // Cam thường
+        } else if (days <= 7) {
+            fireEl.classList.add("fire-lvl-2"); // Cam đậm
+        } else {
+            fireEl.classList.add("fire-lvl-3"); // Đỏ rực + Đập
+        }
+    };
+
+    // 4. Áp dụng cho cả 2 icon (Sidebar & Profile)
+    updateFireColor("sidebar-fire-icon");
+    updateFireColor("profile-fire-icon");
+
+    if (currentUser && currentUser.email) {
+        saveStreakToServer(days);
     }
 }
 
@@ -875,7 +1034,14 @@ function renderWords(filterText = "") {
         actionsCell.className = "word-actions";
 
         const soundBtn = document.createElement("button");
-        soundBtn.textContent = "🔊";
+soundBtn.innerHTML = `
+    <svg class="audio-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+    </svg>
+`;
+
+// (Tùy chọn) Thêm class cho nút để đẹp hơn nếu chưa có
+soundBtn.classList.add("btn-audio-circle");
         soundBtn.className = "mini-btn voice";
         soundBtn.onclick = () => playPronunciation(w.word);
 
@@ -1416,7 +1582,7 @@ let pendingMode = "";      // Lưu tạm chế độ đang chọn (flashcard/fil
 // 1. Điều hướng Tab
 function showSection(sectionId) {
     // Ẩn tất cả section
-    const sections = ['vocab', 'review', 'irregular', 'profile', 'lessons','learning'];
+    const sections = ['vocab', 'review', 'ranking', 'profile', 'lessons','learning'];
     
     // Lưu ý: Trong HTML cũ bạn đặt ID section hơi lộn xộn (cái thì ID, cái thì class nth-of-type).
     // Tốt nhất bạn nên đặt ID rõ ràng cho từng section trong HTML:
@@ -1426,7 +1592,7 @@ function showSection(sectionId) {
     const vocabSec = document.querySelector('section.card:nth-of-type(1)');
     const listSec  = document.getElementById('list-card-section'); // Đã thêm ID này ở bài trước
     const reviewSec = document.getElementById('review-section');
-    const irrSec    = document.getElementById('irregular-section');
+    const rankSec    = document.getElementById('ranking-section');
     const profileSec = document.getElementById('profile-section');
     const lessonsSec = document.getElementById('lessons-section'); // MỚI
     const learnSec = document.getElementById('learning-section')
@@ -1434,7 +1600,7 @@ function showSection(sectionId) {
     if (vocabSec) vocabSec.style.display = 'none';
     if (listSec)  listSec.style.display  = 'none';
     if (reviewSec) reviewSec.style.display = 'none';
-    if (irrSec)    irrSec.style.display    = 'none';
+    if (rankSec)    rankSec.style.display    = 'none';
     if (profileSec) profileSec.style.display = 'none';
     if (lessonsSec) lessonsSec.style.display = 'none';
     if (learnSec) learnSec.style.display = 'none';
@@ -1455,11 +1621,25 @@ function showSection(sectionId) {
         backToReviewMenu();
         document.querySelector('.nav-item:nth-child(2)').classList.add('active');
     }
-    else if (sectionId === 'irregular') {
+    else if (sectionId === 'ranking') {
         
-        if (irrSec) irrSec.style.display = 'block';
-        if (!isIrregularLoaded) fetchIrregularVerbsFromSheet(); 
+        renderRankingBoard();
+        renderHeatmap();
+        loadChatMessages();
+        if(rankSec) rankSec.style.display = 'block';
         document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+        // Cập nhật streak của tôi vào bảng
+        // Cập nhật Footer (Hạng của tôi)
+        const myStreak = computeStreakDays(words);
+        const myStreakEl = document.getElementById("ranking-my-streak");
+        const myNameEl = document.getElementById("ranking-my-name");
+        
+        if(myStreakEl) myStreakEl.textContent = myStreak;
+        
+        // Hiển thị tên Gmail của mình (cắt chuỗi)
+        if(myNameEl && currentUser && currentUser.email) {
+            myNameEl.textContent = currentUser.email.split('@')[0] + " (Bạn)";
+        }
     }
     else if (sectionId === 'profile') {
          words = userWords;
@@ -1563,7 +1743,7 @@ function startReviewSetup(mode) {
     if (noFolderCount > 0) {
         const noFolderOpt = document.createElement("option");
         noFolderOpt.value = "_NO_FOLDER_"; // Giá trị đặc biệt để nhận biết
-        noFolderOpt.textContent = `📂 Chưa phân loại (${noFolderCount} từ)`;
+        noFolderOpt.textContent = `Chưa phân loại (${noFolderCount} từ)`;
         noFolderOpt.style.fontStyle = "italic";
         selectEl.appendChild(noFolderOpt);
     }
@@ -2668,6 +2848,25 @@ if (irrInput) {
     });
 }
 
+function openIrregularModal() {
+    const modal = document.getElementById("irregular-modal");
+    if(modal) {
+        modal.style.display = "flex";
+        // Tự động focus vào ô tìm kiếm
+        setTimeout(() => {
+            const input = document.getElementById("irregular-search-input");
+            if(input) input.focus();
+        }, 100);
+        
+        // Nếu chưa tải dữ liệu thì tải luôn
+        if (!isIrregularLoaded) fetchIrregularVerbsFromSheet();
+    }
+}
+
+function closeIrregularModal() {
+    document.getElementById("irregular-modal").style.display = "none";
+}
+
 
 // Biến lưu trạng thái để tránh báo lặp lại liên tục
 let hasNotifiedExpiration = false;
@@ -3682,7 +3881,9 @@ const COURSES_CONFIG = [
         title: "1000 Từ Cơ Bản",
         sheetName: "Basic 1000", // Giống cột G
         desc: "Từ vựng nền tảng giao tiếp hàng ngày",
-        icon: "🎯",
+        icon: `<svg class="course-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+        </svg>`,
         bgClass: "bg-blue"
     },
     {
@@ -3690,7 +3891,10 @@ const COURSES_CONFIG = [
         title: "Các câu thành ngữ tục ngữ",
         sheetName: "Idiom",      // Giống cột G
         desc: "Câu thành ngữ tục ngữ phổ biến",
-        icon: "📝",
+        icon: `<svg class="course-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 15l-6 6" opacity="0.5"/>
+        </svg>`,
         bgClass: "bg-orange"
     }
     // Bạn có thể thêm khóa IELTS, giao tiếp... vào đây
@@ -4195,8 +4399,485 @@ function toggleReviewJumpingMode() {
     }
 }
 
+// ==========================================
+// RENDER BẢNG XẾP HẠNG & CẬP NHẬT FOOTER
+// ==========================================
+async function renderRankingBoard() {
+    const listEl = document.getElementById("leaderboard-list");
+    
+    // Các Element ở Footer
+    const footerEl = document.getElementById("my-rank-footer");
+    const myRankNumEl = document.getElementById("my-rank-num");
+    const myNameEl = document.getElementById("my-rank-name");
+    const myDescEl = document.getElementById("my-rank-desc");
+    const myStreakEl = document.getElementById("my-rank-streak");
 
+    if (!listEl) return;
+    
+    // --- [MỚI] HIỆN SKELETON LOADING (10 DÒNG) ---
+    // Thay vì xoay vòng tròn, ta vẽ các thanh ngang màu xám
+    let skeletonHtml = "";
+    for(let i=0; i<10; i++) {
+        // Random độ dài tên cho tự nhiên (50% - 80%)
+        const randomWidth = Math.floor(Math.random() * 30) + 50; 
+        
+        skeletonHtml += `
+            <div class="lb-skeleton-row">
+                <div class="lb-col-rank">
+                    <div class="sk-rank-box skeleton-anim"></div>
+                </div>
+                <div class="lb-col-user sk-user-info">
+                    <div class="sk-lb-name skeleton-anim" style="width: ${randomWidth}%"></div>
+                </div>
+                <div class="lb-col-score">
+                    <div class="sk-lb-score skeleton-anim"></div>
+                </div>
+            </div>
+        `;
+    }
+    listEl.innerHTML = skeletonHtml;
+    // ----------------------------------------------
 
+    try {
+        const res = await fetch(LOGIN_API_URL, {
+            method: "POST", mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "getLeaderboard" })
+        });
+        
+        // ... (Phần logic xử lý dữ liệu bên dưới giữ nguyên như cũ) ...
+        const data = await res.json();
+
+        if (data.status !== "success" || !data.data) {
+            listEl.innerHTML = `<div style="padding:20px; text-align:center; color:#ef4444;">Lỗi tải dữ liệu</div>`;
+            return;
+        }
+
+        const topUsers = data.data; 
+        listEl.innerHTML = ""; // Xóa Skeleton đi
+
+        let myRankFound = -1; 
+        const myEmail = currentUser ? currentUser.email.toLowerCase() : "";
+
+        topUsers.forEach((u, index) => {
+            // ... (Code render user thật giữ nguyên) ...
+            const rank = index + 1;
+            let displayName = u.email.split('@')[0];
+            let isMe = false;
+
+            if (u.email.toLowerCase() === myEmail) {
+                displayName += " (Bạn)";
+                isMe = true;
+                myRankFound = rank; 
+            }
+
+            let rowClass = "lb-row";
+            let rankHtml = `<span class="lb-rank-num">${rank}</span>`; // Mặc định là số
+            
+            if (rank === 1) {
+                rowClass += " top-1";
+                rankHtml = SVG_ICONS.MEDAL_1; // Dùng icon Vàng
+            } else if (rank === 2) {
+                rowClass += " top-2";
+                rankHtml = SVG_ICONS.MEDAL_2; // Dùng icon Bạc
+            } else if (rank === 3) {
+                rowClass += " top-3";
+                rankHtml = SVG_ICONS.MEDAL_3; // Dùng icon Đồng
+            }
+
+            // HTML Cột Điểm (Streak) - Thay 🔥 emoji bằng SVG Lửa
+            // Xác định class màu cho lửa (logic giống updateStreak)
+            let fireClass = "fire-off";
+            if(u.streak > 7) fireClass = "fire-lvl-3";
+            else if(u.streak > 3) fireClass = "fire-lvl-2";
+            else if(u.streak > 0) fireClass = "fire-lvl-1";
+
+            const fireIconHtml = `<span class="${fireClass}" style="display:inline-flex; vertical-align:middle;">${SVG_ICONS.FIRE}</span>`;
+
+            const div = document.createElement("div");
+            div.className = rowClass;
+            div.innerHTML = `
+                <div class="lb-col-rank">${rankHtml}</div>
+                <div class="lb-col-user">
+                    <div class="lb-name-text" style="${isMe ? 'color:#4f46e5;' : ''}">${displayName}</div>
+                </div>
+                <div class="lb-col-score">
+                    ${u.streak} ${fireIconHtml}
+                </div>
+            `;
+            listEl.appendChild(div);
+        });
+
+        // ... (Phần cập nhật Footer giữ nguyên) ...
+        if (footerEl) {
+             // ... Code cập nhật footer của bạn ...
+             footerEl.className = "lb-my-rank"; 
+             const localStreak = computeStreakDays(words);
+             if(myStreakEl) myStreakEl.textContent = localStreak;
+             if(myNameEl) myNameEl.textContent = myEmail ? myEmail.split('@')[0] : "Khách";
+
+             if (myRankFound !== -1) {
+                if(myRankNumEl) myRankNumEl.innerHTML = "#" + myRankFound; // Mặc định
+                
+                // Nếu lọt Top 3 thì dùng SVG tương ứng
+                if (myRankFound === 1) {
+                    footerEl.classList.add("is-top-1");
+                    myRankNumEl.innerHTML = SVG_ICONS.MEDAL_1; // Vàng
+                    myRankNumEl.style.background = "transparent"; 
+                    myRankNumEl.style.boxShadow = "none";
+                } 
+                else if (myRankFound === 2) {
+                    footerEl.classList.add("is-top-2");
+                    myRankNumEl.innerHTML = SVG_ICONS.MEDAL_2; // Bạc
+                    myRankNumEl.style.background = "transparent";
+                    myRankNumEl.style.boxShadow = "none";
+                }
+                else if (myRankFound === 3) {
+                    footerEl.classList.add("is-top-3");
+                    myRankNumEl.innerHTML = SVG_ICONS.MEDAL_3; // Đồng
+                    myRankNumEl.style.background = "transparent";
+                    myRankNumEl.style.boxShadow = "none";
+                }
+            } 
+            else 
+            {
+                if(myRankNumEl) myRankNumEl.textContent = "--"; 
+                if(myDescEl) myDescEl.textContent = "Cố gắng thêm để lọt Top!";
+            }
+        }
+
+    } catch (e) {
+        console.error(e);
+        listEl.innerHTML = `<div style="padding:15px; text-align:center; color:#ef4444;">Lỗi kết nối</div>`;
+    }
+}
+
+// ==========================================
+// RENDER HEATMAP (PIXEL PERFECT)
+// ==========================================
+function renderHeatmap() {
+    const grid = document.getElementById("heatmap-grid");
+    const monthsEl = document.getElementById("heatmap-months");
+    if (!grid) return;
+    
+    grid.innerHTML = "";
+    if (monthsEl) monthsEl.innerHTML = "";
+
+    // 1. Chuẩn bị dữ liệu
+    const frequencyMap = {};
+    const dataSource = (typeof words !== 'undefined') ? words : [];
+    
+    dataSource.forEach(w => {
+        if (w.dateAdded) {
+            try {
+                const dateStr = new Date(w.dateAdded).toISOString().split('T')[0];
+                frequencyMap[dateStr] = (frequencyMap[dateStr] || 0) + 1;
+            } catch(e) {}
+        }
+    });
+
+    // 2. Tính toán ngày (Hiển thị 20 tuần)
+    const totalWeeks = 20; 
+    const today = new Date();
+    
+    // Tìm Chủ Nhật gần nhất (để làm cột cuối cùng)
+    const endDate = new Date(today);
+    // Nếu hôm nay không phải CN, thì grid sẽ kết thúc ở hôm nay (cột cuối chưa đầy) 
+    // Nhưng để đẹp, GitHub thường kết thúc ở cột tuần hiện tại.
+    
+    // Tìm ngày bắt đầu: Lùi lại 20 tuần, bắt đầu từ Thứ 2 (để khớp hàng 1)
+    // Tính toán số ngày cần render sao cho ngày đầu tiên luôn là Thứ 2
+    
+    // Lấy ngày Chủ Nhật của tuần hiện tại làm mốc cuối
+    const dayOfWeekToday = today.getDay(); // 0 (CN) -> 6 (T7)
+    const diffToSunday = dayOfWeekToday === 0 ? 0 : 7 - dayOfWeekToday;
+    // const gridEndDate = new Date(today); 
+    // gridEndDate.setDate(today.getDate() + diffToSunday); 
+    // (Thực ra cứ vẽ đến hôm nay là được, ô tương lai để trống)
+
+    // Để đơn giản và đẹp: Vẽ đúng 20 cột (140 ô).
+    // Ngày cuối cùng là Hôm nay.
+    // Ngày bắt đầu: Lùi lại sao cho rơi vào Thứ 2 của 20 tuần trước.
+    
+    // Logic GitHub chuẩn: Cột đầu tiên luôn là Chủ Nhật -> Thứ 2
+    // Chúng ta vẽ theo chiều dọc (Column flow).
+    // Ô đầu tiên (Góc trái trên) phải là Thứ 2.
+    
+    // Tìm Thứ 2 của tuần cách đây 19 tuần
+    const startWeekDate = new Date(today);
+    startWeekDate.setDate(today.getDate() - (dayOfWeekToday === 0 ? 6 : dayOfWeekToday - 1)); // Về Thứ 2 tuần này
+    startWeekDate.setDate(startWeekDate.getDate() - (19 * 7)); // Lùi 19 tuần trước
+
+    let currentMonth = -1;
+    let lastMonthLabelIndex = -99;
+
+    // Render 20 tuần (20 cột x 7 dòng = 140 ô)
+    for (let i = 0; i < 140; i++) {
+        const d = new Date(startWeekDate);
+        d.setDate(startWeekDate.getDate() + i);
+        
+        const dateKey = d.toISOString().split('T')[0];
+        const count = frequencyMap[dateKey] || 0;
+        
+        // --- XỬ LÝ NHÃN THÁNG ---
+        // Chỉ check ở dòng đầu tiên của cột (Index chia hết cho 7)
+        if (i % 7 === 0) { 
+             const m = d.getMonth();
+             const colIndex = i / 7;
+             
+             // Nếu đổi tháng VÀ cách nhãn trước ít nhất 2 cột (để không đè nhau)
+             if (m !== currentMonth && (colIndex - lastMonthLabelIndex) > 2) {
+                 currentMonth = m;
+                 lastMonthLabelIndex = colIndex;
+                 
+                 const mSpan = document.createElement("div");
+                 mSpan.className = "heatmap-month-label";
+                 mSpan.textContent = `Thg ${m + 1}`;
+                 // Mỗi cột rộng 13px (10px ô + 3px gap)
+                 mSpan.style.left = `${colIndex * 13}px`; 
+                 if(monthsEl) monthsEl.appendChild(mSpan);
+             }
+        }
+
+        // --- RENDER Ô ---
+        const cell = document.createElement("div");
+        cell.className = "hm-cell";
+        
+        // Không render các ngày trong tương lai (Màu xám)
+        if (d > today) {
+            cell.classList.add("hm-l0");
+        } else {
+            if (count === 0) cell.classList.add("hm-l0");
+            else if (count <= 2) cell.classList.add("hm-l1");
+            else if (count <= 5) cell.classList.add("hm-l2");
+            else if (count <= 9) cell.classList.add("hm-l3");
+            else cell.classList.add("hm-l4");
+        }
+
+        // Tooltip
+        const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        const countText = count === 0 ? "Không có hoạt động" : `${count} từ mới`;
+        const tooltipText = `${dayNames[d.getDay()]}, ${d.getDate()} thg ${d.getMonth()+1}: ${countText}`;
+        
+        cell.innerHTML = `<div class="hm-tooltip">${tooltipText}</div>`;
+        grid.appendChild(cell);
+    }
+}
+
+async function loadChatMessages() {
+    const chatContent = document.getElementById("chat-content");
+    if (!chatContent) return;
+
+    // --- HIỆU ỨNG SKELETON LOADING ---
+    // Thay vì chữ "Đang tải...", ta vẽ 3 tin nhắn giả màu xám
+    chatContent.innerHTML = `
+        <div class="chat-skeleton">
+            <div class="sk-avatar skeleton-anim"></div>
+            <div class="sk-bubble skeleton-anim" style="width: 40%;"></div>
+        </div>
+        <div class="chat-skeleton">
+            <div class="sk-avatar skeleton-anim"></div>
+            <div class="sk-bubble skeleton-anim" style="width: 65%;"></div>
+        </div>
+        <div class="chat-skeleton right"> <div class="sk-bubble skeleton-anim" style="width: 30%;"></div>
+        </div>
+        <div class="chat-skeleton">
+            <div class="sk-avatar skeleton-anim"></div>
+            <div class="sk-bubble skeleton-anim" style="width: 50%;"></div>
+        </div>
+    `;
+    
+    // Cuộn xuống dưới cùng để thấy hiệu ứng
+    chatContent.scrollTop = chatContent.scrollHeight;
+
+    try {
+        const res = await fetch(LOGIN_API_URL, {
+            method: "POST", mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "getChatHistory" })
+        });
+        const data = await res.json();
+
+        if (data.status === "success") {
+            renderChatUI(data.data);
+        } else {
+            // Nếu lỗi server trả về thì báo nhẹ
+            chatContent.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:#ef4444;">Không tải được tin nhắn.</div>`;
+        }
+    } catch (e) {
+        console.error("Lỗi tải chat:", e);
+        // Giữ nguyên skeleton hoặc báo lỗi nếu muốn
+        // chatContent.innerHTML = ...
+    }
+}
+
+function renderChatUI(messages) {
+    const container = document.getElementById("chat-content");
+    if (!container) return;
+    
+    container.innerHTML = ""; 
+
+    if (!messages || messages.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#9ca3af; font-size:12px;">Chưa có tin nhắn nào.</div>';
+        return;
+    }
+
+    const myEmail = currentUser ? currentUser.email.toLowerCase() : "";
+
+    messages.forEach(msg => {
+        if (!msg.message || String(msg.message).trim() === "") return;
+        
+        // Gọi hàm tạo element
+        const msgEl = createMessageElement(msg, myEmail);
+        container.appendChild(msgEl);
+    });
+
+    // Cuộn xuống đáy
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+async function sendChatMessage() {
+    if (!currentUser || !currentUser.email) {
+        alert("Vui lòng đăng nhập để chat!");
+        return;
+    }
+
+    const input = document.getElementById("chat-input-field");
+    const container = document.getElementById("chat-content");
+    const msgText = input.value.trim();
+    
+    if (!msgText) return;
+
+    // 1. XÓA INPUT NGAY LẬP TỨC (Tạo cảm giác nhanh)
+    input.value = "";
+    input.focus();
+
+    // 2. HIỂN THỊ TIN NHẮN GIẢ LẬP LÊN MÀN HÌNH NGAY (Optimistic UI)
+    const myEmail = currentUser.email.toLowerCase();
+    const isAdmin = ADMIN_EMAILS.includes(myEmail);
+    
+    // Tạo object tin nhắn giả lập
+    // Nếu là Admin thì userInfo rỗng, nếu là User thì là email
+    const fakeMsgObj = {
+        userInfo: isAdmin ? "" : myEmail, 
+        message: msgText
+    };
+
+    // Tạo HTML và chèn vào luôn
+    const msgEl = createMessageElement(fakeMsgObj, myEmail);
+    
+    // Xóa thông báo "Chưa có tin nhắn" nếu có
+    if (container.querySelector('.chat-item') === null) {
+        container.innerHTML = ""; 
+    }
+    
+    container.appendChild(msgEl);
+    container.scrollTop = container.scrollHeight; // Cuộn xuống ngay
+
+    // 3. GỬI NGẦM (Không chờ đợi, không loading)
+    try {
+        await fetch(LOGIN_API_URL, {
+            method: "POST", mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                action: "sendChatMessage",
+                email: myEmail,
+                message: msgText,
+                isAdmin: isAdmin 
+            })
+        });
+        
+        // Thành công: Không cần làm gì cả vì tin nhắn đã hiện rồi!
+        // (Không gọi loadChatMessages() lại để tránh giật màn hình)
+        console.log("✅ Đã gửi tin nhắn thành công (Background)");
+
+    } catch (e) {
+        console.error(e);
+        // Thất bại: Đổi màu tin nhắn sang đỏ hoặc báo lỗi (Optional)
+        msgEl.style.opacity = "0.5";
+        msgEl.title = "Gửi thất bại";
+        alert("Gửi thất bại, vui lòng kiểm tra mạng.");
+    }
+}
+
+function createMessageElement(msgObj, myEmail) {
+    // 1. Chuẩn bị dữ liệu
+    const userInfo = msgObj.userInfo || ""; 
+    const text = msgObj.message;
+    
+    let type = "user"; 
+    let displayName = "Ẩn danh";
+    let displayTime = "";
+    let avatarChar = "U";
+    let avatarColor = "#6b7280"; 
+
+    // --- LOGIC PHÂN LOẠI (Admin / Me / User) ---
+    if (userInfo.trim() === "") {
+        type = "admin";
+        displayName = "ADMIN QUẢN TRỊ";
+        displayTime = "Hỗ trợ";
+        avatarChar = "🛡️"; 
+        avatarColor = "#ef4444"; 
+    } 
+    else {
+        let rawEmail = userInfo;
+        
+        // Tách thời gian nếu có dấu ngoặc (time)
+        const openParenIndex = userInfo.indexOf('(');
+        if (openParenIndex !== -1) {
+            rawEmail = userInfo.substring(0, openParenIndex).trim();
+            displayTime = userInfo.substring(openParenIndex).replace('(', '').replace(')', '').trim();
+        } else {
+            // Nếu gửi ngay lập tức chưa có time từ server, ta lấy giờ hiện tại
+            const now = new Date();
+            displayTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+
+        if (rawEmail.toLowerCase() === myEmail) {
+            type = "me";
+            displayName = "Bạn";
+        } else {
+            displayName = rawEmail.split('@')[0] || "User";
+            avatarChar = displayName.charAt(0).toUpperCase();
+            
+            const colors = ["#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4"];
+            let hash = 0;
+            for (let i = 0; i < displayName.length; i++) {
+                hash = displayName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            avatarColor = colors[Math.abs(hash) % colors.length];
+        }
+    }
+
+    // --- TẠO PHẦN TỬ DIV ---
+    const div = document.createElement("div");
+    div.className = `chat-item ${type}`;
+
+    let avatarHtml = '';
+    if (type === 'admin') {
+         avatarHtml = `<div class="chat-avatar" style="background:${avatarColor}; font-size:14px;">${avatarChar}</div>`;
+    } else {
+         avatarHtml = `<div class="chat-avatar" style="background:${avatarColor};">${avatarChar}</div>`;
+    }
+
+    const adminTag = type === 'admin' ? '<span class="admin-tag" style="margin-left:4px;">ADMIN</span>' : '';
+
+    div.innerHTML = `
+        ${type !== 'me' ? avatarHtml : ''} 
+        <div class="chat-bubble">
+            <div class="chat-name">
+                ${displayName} 
+                ${adminTag}
+                <span class="chat-time" style="margin-left:6px;">${displayTime}</span>
+            </div>
+            <div class="chat-msg">${text}</div>
+        </div>
+    `;
+    
+    return div;
+}
 
 (async function init() {
     // 1. BẮT ĐẦU MÀN HÌNH CHỜ NGAY LẬP TỨC

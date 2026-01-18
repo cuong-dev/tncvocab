@@ -51,6 +51,42 @@ html, body {
     margin-bottom: 30px;
     padding: 0 8px;
 }
+
+/* ============================================================
+   SIDEBAR SVG NAV ICONS (Thay thế Emoji cũ)
+============================================================ */
+
+/* Style chung cho icon Nav */
+.nav-svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.5; /* Độ dày nét vẽ */
+    stroke: currentColor; /* Ăn theo màu chữ của nav-item */
+    fill: none;
+    transition: all 0.3s ease;
+}
+
+/* Hiệu ứng khi Hover vào nút */
+.nav-item:hover .nav-svg {
+    transform: scale(1.1); /* Phóng to nhẹ */
+    stroke: #111827; /* Màu đậm hơn khi hover */
+}
+
+/* Hiệu ứng khi nút đang Active (Được chọn) */
+.nav-item.active .nav-svg {
+    stroke: #4f46e5; /* Màu tím chủ đạo */
+    stroke-width: 2; /* Nét đậm hơn chút */
+    filter: drop-shadow(0 0 3px rgba(79, 70, 229, 0.4)); /* Phát sáng nhẹ */
+    transform: translateY(-1px);
+}
+
+/* Điều chỉnh lại icon cũ một chút để căn giữa */
+.nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; /* Cố định chiều rộng khung chứa icon */
+}
 /* ===============================
    PROFILE TAB STYLES
 =================================*/
@@ -316,6 +352,86 @@ html, body {
     background:#f97316;
 }
 
+.fire-icon {
+    display: inline-block;
+    transition: all 0.5s ease; /* Chuyển màu mượt mà */
+    font-size: 18px; /* Kích thước cơ bản */
+}
+
+/* --- CÁC CẤP ĐỘ LỬA --- */
+
+/* Level 0: Tắt ngúm (Xám, nhỏ, mờ) */
+.fire-off .fire-svg { 
+    fill: #d1d5db; 
+    opacity: 0.5; 
+    transform: scale(0.9); /* Thu nhỏ lại */
+}
+
+/* Level 1: Nhen nhóm (Vàng cam, kích thước chuẩn) */
+.fire-lvl-1 .fire-svg { 
+    fill: #f59e0b; 
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.3)); /* Phát sáng nhẹ */
+}
+
+/* Level 2: Bùng cháy (Cam đậm, to hơn, sáng hơn) */
+.fire-lvl-2 .fire-svg { 
+    fill: #ea580c; 
+    transform: scale(1.15); /* Phóng to 15% */
+    filter: drop-shadow(0 0 5px rgba(234, 88, 12, 0.6)); /* Phát sáng rõ */
+}
+
+/* Level 3: Cực đại (Đỏ rực, rất to, sáng chói lòa, đập thình thịch) */
+.fire-lvl-3 .fire-svg { 
+    fill: #dc2626; 
+    /* Animation mới: Vừa đập vừa thay đổi độ sáng */
+    animation: firePulseIntense 1.5s infinite alternate;
+}
+
+/* Animation mới cho cấp 3 */
+@keyframes firePulseIntense {
+    0% { 
+        transform: scale(1.25); 
+        filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.7));
+    }
+    100% { 
+        transform: scale(1.4); /* Phóng to lên 40% */
+        filter: drop-shadow(0 0 12px rgba(255, 50, 50, 1)); /* Sáng rực */
+    }
+}
+
+/* ============================================================
+   SVG ICONS STYLES (Thay thế Emoji)
+============================================================ */
+
+/* Cấu hình chung cho icon SVG */
+.medal-svg {
+    width: 36px; /* Kích thước to, rõ ràng */
+    height: 36px;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); /* Bóng đổ nhẹ tạo chiều sâu */
+    transition: transform 0.2s ease;
+}
+
+.lb-row:hover .medal-svg {
+    transform: scale(1.1); /* Di chuột vào phóng to nhẹ */
+}
+
+/* Hiệu ứng bóng đổ riêng cho từng loại (Tùy chọn) */
+.icon-gold { filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.4)); }
+.icon-silver { filter: drop-shadow(0 4px 8px rgba(148, 163, 184, 0.4)); }
+.icon-bronze { filter: drop-shadow(0 4px 8px rgba(234, 88, 12, 0.4)); }
+
+/* Icon Lửa (Streak) */
+.fire-svg {
+    width: 24px; /* Tăng kích thước cơ bản (cũ là 16px) */
+    height: 24px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy nhẹ khi đổi màu */
+    vertical-align: middle; /* Căn giữa với số điểm */
+}
+
+
 .app-version {
     text-align: center;
     margin-top: 12px;
@@ -569,6 +685,30 @@ html, body {
 .floating-timer-badge.expired .timer-value { color: #dc2626; }
 .floating-timer-badge.expired .timer-sub { color: #991b1b; }
 
+/* Icon Hết hạn (Vòng tròn gạch chéo) */
+.expired-svg {
+    width: 16px;
+    height: 16px;
+    stroke: #ef4444; /* Màu đỏ */
+    stroke-width: 2;
+    fill: none;
+    margin-right: 4px;
+    vertical-align: -3px;
+}
+
+/* Badge trạng thái Hết hạn */
+.badge-expired {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: #fef2f2; /* Nền đỏ nhạt */
+    color: #b91c1c;       /* Chữ đỏ đậm */
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #fecaca;
+}
+
 /* Nhãn "DÙNG THỬ" */
 .timer-label {
     font-size: 10px;
@@ -814,6 +954,31 @@ html, body {
     font-weight: bold;
 }
 .btn-remove-item:hover { color: #b91c1c; }
+
+.inline-svg-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.8;
+    stroke: currentColor; /* Màu ăn theo màu chữ của thẻ cha */
+    fill: none;
+    vertical-align: -3px; /* Căn chỉnh cho thẳng hàng với chữ */
+    display: inline-block;
+}
+
+/* Icon mũi tên bên phải thì cách ra một chút */
+.icon-right {
+    margin-left: 6px;
+    width: 16px; /* Nhỏ hơn xíu cho tinh tế */
+    height: 16px;
+}
+
+/* Hiệu ứng khi hover vào link/nút chứa icon */
+a:hover .inline-svg-icon,
+button:hover .inline-svg-icon {
+    stroke: #4f46e5; /* Đổi màu tím khi di chuột */
+    transform: scale(1.1); /* Phóng to nhẹ */
+    transition: all 0.2s ease;
+}
 
 /* ============================================================
    MODAL MODERN STYLES (Trang trí lại Modal Bulk Add)
@@ -1239,6 +1404,22 @@ html, body {
     animation: slideIn 0.3s ease-out;
 }
 
+.premium-svg {
+    width: 50px;
+    height: 50px;
+    stroke-width: 1.8;
+    fill: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Màu đỏ cho trạng thái Hết hạn (Nổi bật) */
+.icon-expired {
+    stroke: #ef4444; /* Màu đỏ */
+    filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.2)); /* Bóng nhẹ */
+}
+
+
 .premium-header {
     background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     padding: 20px;
@@ -1528,6 +1709,14 @@ html, body {
     margin-top: 16px;
 }
 
+.review-svg {
+    width: 32px;
+    height: 32px;
+    stroke-width: 1.5;
+    fill: none;
+    transition: all 0.3s ease;
+}
+
 .review-option-card {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
@@ -1544,15 +1733,19 @@ html, body {
     border-color: #4f46e5;
     transform: translateY(-2px);
 }
+
+.review-option-card:hover .review-svg {
+    transform: scale(1.1) rotate(-5deg);
+}
 .review-icon {
-    font-size: 32px;
-    background: #eef2ff;
-    width: 56px;
-    height: 56px;
+    /* Reset lại style cũ của bạn */
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    font-size: 0; /* Ẩn text/emoji cũ nếu còn sót */
 }
 .review-info h3 {
     margin: 0 0 4px;
@@ -1565,6 +1758,66 @@ html, body {
     color: #6b7280;
     line-height: 1.4;
 }
+
+/* 1. Flashcards (Màu Tím) */
+.ri-purple {
+    background: #f3e8ff; /* Nền tím nhạt */
+    color: #9333ea;      /* Icon tím đậm */
+}
+
+/* 2. Điền từ (Màu Xanh Dương) */
+.ri-blue {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* 3. Sắp xếp chữ (Màu Cam) */
+.ri-orange {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+/* ============================================================
+   INLINE SVG ICONS (Cho nút bấm & Input)
+============================================================ */
+
+/* Class chung cho icon nhỏ đi kèm chữ */
+.icon-svg-sm {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    stroke: currentColor;
+    fill: none;
+    display: inline-block;
+    vertical-align: -3px; /* Căn chỉnh với dòng chữ */
+    margin-right: 4px;
+}
+
+/* Tinh chỉnh riêng cho icon Tìm kiếm */
+.search-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: #9ca3af; /* Màu xám placeholder */
+    transition: stroke 0.2s;
+}
+
+/* Khi focus vào ô tìm kiếm thì icon đổi màu tím */
+.search-wrapper:focus-within .search-icon svg {
+    stroke: #6366f1;
+}
+
+/* Hiệu ứng xoay nhẹ cho icon Sparkle (Thêm từ nhanh) */
+.btn-bulk-ai:hover .icon-svg-sm {
+    animation: spinSparkle 2s linear infinite;
+}
+
+@keyframes spinSparkle {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+
 
 /* FLASHCARD STYLES */
 .flashcard-container {
@@ -2409,6 +2662,19 @@ html, body {
     background: #eff6ff;
 }
 
+.course-svg {
+    width: 28px;
+    height: 28px;
+    stroke: white; /* Icon màu trắng để nổi trên nền màu */
+    fill: none;
+    transition: transform 0.3s ease;
+}
+
+/* Hiệu ứng khi di chuột vào thẻ khóa học */
+.course-card:hover .course-svg {
+    transform: scale(1.15) rotate(-5deg); /* Phóng to và xoay nhẹ */
+}
+
 /* --- BADGES (Nhãn NEW / HIỆN TẠI) --- */
 .lesson-badge {
     position: absolute;
@@ -2433,19 +2699,70 @@ html, body {
 }
 
 .lesson-icon-box {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    flex-shrink: 0;
+    margin-right: 15px;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Không bị co lại trên mobile */
+}
+
+.lesson-svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.5;
+    fill: none;
+    stroke: currentColor;
+}
+
+.l-active {
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+}
+
+/* 2. Đã hoàn thành (Màu Xanh lá) */
+.l-completed {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+/* 3. Bị khóa (Màu Xám) */
+.l-locked {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+}
+
+/* Hiệu ứng hover vào thẻ bài học */
+.lesson-card:hover .lesson-icon-box.l-active {
+    transform: scale(1.1) rotate(-5deg);
+    background: #4f46e5;
+    color: white;
 }
 
 /* Các màu nền icon khác nhau */
-.bg-blue   { background: #dbeafe; color: #2563eb; }
-.bg-orange { background: #ffedd5; color: #ea580c; }
+.bg-blue {
+    background: linear-gradient(135deg, #3b82f6, #2563eb); /* Gradient xanh */
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    color: white;
+    /* Căn giữa icon */
+    display: flex; align-items: center; justify-content: center;
+    width: 50px; height: 50px; border-radius: 14px; /* Kích thước hộp icon */
+}
+
+/* Nền Cam (Cho Idiom) */
+.bg-orange {
+    background: linear-gradient(135deg, #f97316, #ea580c); /* Gradient cam */
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    width: 50px; height: 50px; border-radius: 14px;
+}
 .bg-green  { background: #dcfce7; color: #16a34a; }
 .bg-purple { background: #f3e8ff; color: #9333ea; }
 
@@ -2497,12 +2814,6 @@ html, body {
     font-size: 16px;
 }
 
-/* Responsive cho mobile */
-@media (max-width: 480px) {
-    .lesson-header { gap: 12px; }
-    .lesson-icon-box { width: 40px; height: 40px; font-size: 20px; }
-    .lesson-title { font-size: 15px; }
-}
 
 /* ===============================
    TOPIC LIST STYLES (LEVEL 2)
@@ -2698,6 +3009,523 @@ html, body {
     font-weight: 500;
 }
 
+
+
+/* ============================================================
+   RANKING LAYOUT (FULL SCREEN - NO BODY SCROLL)
+============================================================ */
+
+/* 1. Khung chính: Cố định chiều cao, không cho cuộn trang */
+#ranking-section {
+    height: calc(100vh - 65px) !important; /* Trừ thanh menu đáy */
+    overflow: hidden; 
+    padding-bottom: 0 !important; /* Xóa padding thừa */
+    display: flex;
+    flex-direction: column;
+}
+
+.ranking-layout {
+    display: flex;
+    gap: 15px;
+    height: 100%;
+    align-items: stretch;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* --- CỘT TRÁI: BẢNG XẾP HẠNG (Giữ nguyên style cũ nhưng fix cuộn) --- */
+.leaderboard-panel {
+    flex: 1;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+.lb-header {
+    flex-shrink: 0;
+    display: flex;
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 11px; font-weight: 700; color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.lb-col-rank { width: 50px; text-align: center; } /* Cột hạng */
+.lb-col-user { flex: 1; text-align: left; padding-left: 10px; } /* Cột tên */
+.lb-col-score { width: 80px; text-align: right; } /* Cột điểm */
+
+/* List Scroll */
+.lb-list-scroll { flex: 1; overflow-y: auto; }
+.lb-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: #334155;
+}
+
+.lb-row:hover { background: #f8fafc; }
+
+.lb-name-text {
+    font-weight: 600;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Top 1: Vàng - Nền sáng - Chữ đậm */
+.lb-row.top-1 {
+    background: linear-gradient(90deg, #fffbeb 0%, #ffffff 100%);
+    border-left: 4px solid #f59e0b; /* Viền vàng */
+    padding-left: 16px; /* Bù lại 4px viền */
+}
+.lb-row.top-1 .lb-col-rank { font-size: 20px; } /* Icon to */
+.lb-row.top-1 .lb-name-text { color: #b45309; font-weight: 800; font-size: 15px; }
+.lb-row.top-1 .lb-col-score { color: #d97706; font-weight: 800; }
+
+/* Top 2: Bạc/Xám */
+.lb-row.top-2 {
+    background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+    border-left: 4px solid #94a3b8; /* Viền bạc */
+    padding-left: 16px;
+}
+.lb-row.top-2 .lb-col-rank { font-size: 18px; }
+.lb-row.top-2 .lb-name-text { color: #475569; font-weight: 700; }
+
+/* Top 3: Đồng/Cam */
+.lb-row.top-3 {
+    background: linear-gradient(90deg, #fff7ed 0%, #ffffff 100%);
+    border-left: 4px solid #fdba74; /* Viền đồng */
+    padding-left: 16px;
+}
+.lb-row.top-3 .lb-col-rank { font-size: 18px; }
+.lb-row.top-3 .lb-name-text { color: #9a3412; font-weight: 700; }
+
+/* Các hạng thường */
+.lb-rank-num {
+    font-weight: 700;
+    color: #94a3b8;
+    background: #f1f5f9;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 12px;
+}
+
+.lb-my-rank {
+    flex-shrink: 0;
+    border-top: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 12px 20px;
+    display: flex; 
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+    z-index: 20;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Hiệu ứng khi lọt Top */
+.lb-my-rank.is-top-1 {
+    background: linear-gradient(90deg, #fffbeb, #fff);
+    border-left: 4px solid #f59e0b;
+    box-shadow: 0 -4px 20px rgba(245, 158, 11, 0.15);
+}
+.lb-my-rank.is-top-2 {
+    background: linear-gradient(90deg, #f8fafc, #fff);
+    border-left: 4px solid #94a3b8;
+}
+.lb-my-rank.is-top-3 {
+    background: linear-gradient(90deg, #fff7ed, #fff);
+    border-left: 4px solid #fdba74;
+}
+
+.my-rank-badge {
+    width: 32px; 
+    height: 32px;
+    background: #4f46e5; 
+    color: white;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
+}
+
+/* Nếu top 1, 2, 3 thì đổi màu badge */
+.is-top-1 .my-rank-badge { background: #f59e0b; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
+.is-top-2 .my-rank-badge { background: #64748b; box-shadow: none; }
+.is-top-3 .my-rank-badge { background: #ea580c; box-shadow: none; }
+
+/* Tên và Streak */
+.my-rank-info { flex: 1; padding-left: 12px; }
+.my-name-display { font-weight: 700; color: #1e293b; font-size: 14px; }
+.my-rank-status { font-size: 11px; color: #6b7280; }
+
+.my-score-display { 
+    font-weight: 800; color: #4f46e5; font-size: 16px; 
+    display: flex; align-items: center; gap: 4px;
+}
+.is-top-1 .my-score-display { color: #d97706; }
+
+.lb-my-rank .lb-name-text { color: #4f46e5; }
+
+/* --- CỘT PHẢI: WIDGETS --- */
+.ranking-sidebar {
+    width: 320px; /* Chiều rộng cố định */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+/* ============================================================
+   REFRESH ICON SVG (Cho Widget Chat)
+============================================================ */
+
+.refresh-svg {
+    width: 18px;
+    height: 18px;
+    stroke: #94a3b8; /* Màu xám mặc định */
+    stroke-width: 2;
+    fill: none;
+    transition: all 0.4s ease;
+}
+
+/* Container của nút refresh */
+.refresh-btn-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* Hiệu ứng khi di chuột vào */
+.refresh-btn-wrapper:hover {
+    background: #f1f5f9; /* Nền xám nhạt */
+}
+
+.refresh-btn-wrapper:hover .refresh-svg {
+    stroke: #4f46e5; /* Đổi màu tím */
+    transform: rotate(180deg); /* Xoay 180 độ */
+}
+
+/* Hiệu ứng khi bấm (Active) */
+.refresh-btn-wrapper:active .refresh-svg {
+    transform: rotate(360deg);
+}
+
+/* ============================================================
+   HEATMAP STYLE (PIXEL PERFECT - GITHUB STYLE)
+============================================================ */
+
+.widget-card.heatmap-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.heatmap-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Căn trái toàn bộ khối */
+}
+
+/* Dòng chứa Month Labels */
+.heatmap-months {
+    display: flex;
+    position: relative;
+    height: 15px; /* Chiều cao cố định cho dòng tháng */
+    width: 100%;
+    margin-bottom: 4px;
+    margin-left: 28px; /* Thụt vào bằng chiều rộng cột Thứ */
+}
+
+.heatmap-month-label {
+    position: absolute;
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Container chính chứa Thứ + Lưới */
+.heatmap-body {
+    display: flex;
+    gap: 4px; /* Khoảng cách giữa cột Thứ và Lưới */
+}
+
+/* Cột Thứ (T2, T4, T6) - Dùng Grid để khớp dòng */
+.heatmap-days {
+    display: grid;
+    grid-template-rows: repeat(7, 10px); /* 7 dòng, mỗi dòng 10px bằng ô vuông */
+    gap: 3px; /* Gap 3px bằng lưới */
+    padding-right: 4px;
+}
+
+.heatmap-days span {
+    font-size: 9px;
+    color: #94a3b8;
+    line-height: 10px; /* Căn giữa chiều cao dòng */
+    text-align: right;
+    visibility: hidden; /* Ẩn các dòng lẻ */
+}
+
+/* Chỉ hiện T2, T4, T6 (Dòng 2, 4, 6) */
+.heatmap-days span:nth-child(2),
+.heatmap-days span:nth-child(4),
+.heatmap-days span:nth-child(6) {
+    visibility: visible;
+}
+
+/* Lưới ô vuông */
+.heatmap-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 10px); 
+    grid-auto-flow: column;
+    gap: 3px; 
+}
+
+/* Ô vuông */
+.hm-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background-color: #f1f5f9; /* Mặc định (0) */
+    position: relative;
+    box-sizing: border-box; /* Để border không làm to ô */
+}
+
+.hm-cell:hover {
+    border: 1px solid rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+/* BẢNG MÀU INDIGO (Xanh Tím - Tươi sáng hơn) */
+.hm-l0 { background-color: #f1f5f9; }
+.hm-l1 { background-color: #c7d2fe; } /* 1-2 */
+.hm-l2 { background-color: #818cf8; } /* 3-5 */
+.hm-l3 { background-color: #4f46e5; } /* 6-9 */
+.hm-l4 { background-color: #312e81; } /* 10+ */
+
+/* Chú thích (Legend) */
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 8px;
+    width: 100%;
+    margin-left: 10px;
+}
+.sq { width: 10px; height: 10px; border-radius: 2px; display:inline-block; }
+
+/* TOOLTIP TINH CHỈNH (Nhỏ gọn, nằm trên cao) */
+.hm-tooltip {
+    visibility: hidden;
+    background-color: #1e293b;
+    color: #fff;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    
+    /* Vị trí */
+    position: absolute;
+    z-index: 100;
+    bottom: 160%; /* Đẩy lên cao hơn nữa để không che ô */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Mũi tên tooltip */
+.hm-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+}
+
+.hm-cell:hover .hm-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+/* ============================================================
+   CHAT WIDGET STYLES (Admin, Me, User)
+============================================================ */
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px; /* Cách nội dung xa hơn chút cho thoáng */
+    
+    /* Font chữ nổi bật */
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #111827 !important;
+    letter-spacing: -0.3px; /* Dồn chữ nhẹ cho hiện đại */
+}
+
+/* Căn chỉnh icon SVG đi kèm tiêu đề */
+.widget-header svg {
+    margin-right: 8px; /* Khoảng cách giữa icon và chữ */
+    stroke-width: 2.5; /* Icon đậm hơn theo chữ */
+}
+
+/* Riêng cho phần Chat, nút Refresh vẫn giữ nguyên */
+.widget-header .refresh-btn-wrapper {
+    margin-left: auto; /* Đẩy sang phải cùng */
+}
+
+
+.widget-card.chat-widget {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.chat-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 1px dashed #f3f4f6;
+    padding-top: 10px;
+}
+
+/* --- BASE ITEM --- */
+.chat-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    max-width: 90%;
+}
+
+.chat-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    color: white; font-weight: 700; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chat-bubble {
+    padding: 8px 12px;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.chat-name {
+    font-size: 11px; font-weight: 700; margin-bottom: 2px;
+    display: flex; align-items: center; gap: 6px;
+}
+.chat-time { font-weight: 400; color: #94a3b8; font-size: 9px; }
+.chat-msg { line-height: 1.4; word-wrap: break-word; }
+
+/* --- 1. ADMIN (Nổi bật) --- */
+.chat-item.admin {
+    max-width: 95%;
+}
+.chat-item.admin .chat-bubble {
+    background: #fef2f2; /* Nền đỏ nhạt */
+    border: 1px solid #fecaca;
+}
+.chat-item.admin .chat-name { color: #b91c1c; }
+.chat-item.admin .chat-msg { color: #7f1d1d; font-weight: 500; }
+
+/* Tag Admin */
+.admin-tag {
+    background: #dc2626; color: white;
+    font-size: 8px; padding: 1px 4px; border-radius: 4px;
+    font-weight: 800; letter-spacing: 0.5px;
+}
+
+/* --- 2. ME (Tin nhắn của mình - Căn phải) --- */
+.chat-item.me {
+    align-self: flex-end; /* Đẩy sang phải */
+    flex-direction: row-reverse; /* Đảo ngược avatar (nếu có hiện) */
+}
+.chat-item.me .chat-bubble {
+    background: #4f46e5; /* Màu tím chủ đạo */
+    color: white;
+    border-bottom-right-radius: 2px;
+    border-top-left-radius: 12px;
+}
+.chat-item.me .chat-name { 
+    color: #e0e7ff; 
+    justify-content: flex-end; /* Tên căn phải */
+}
+.chat-item.me .chat-time { color: #a5b4fc; }
+.chat-item.me .chat-msg { color: white; }
+
+/* --- 3. USER KHÁC --- */
+.chat-item.user .chat-bubble {
+    background: #f1f5f9;
+    color: #334155;
+    border-top-left-radius: 2px;
+}
+.chat-item.user .chat-name { color: #1e293b; }
+
+/* Input Area */
+.chat-input-area {
+    margin-top: 10px;
+    flex-shrink: 0;
+    display: flex; gap: 8px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 10px;
+}
+.chat-input {
+    flex: 1; border: 1px solid #cbd5e1; border-radius: 20px;
+    padding: 8px 14px; font-size: 13px; outline: none; background: #f9fafb;
+    transition: all 0.2s;
+}
+.chat-input:focus { background: white; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+
+.chat-send-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #4f46e5; color: white; border: none; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s;
+}
+.chat-send-btn:active { transform: scale(0.9); }
 /* ============================================================
    GLOBAL LOADER STYLES
 ============================================================ */
@@ -2827,6 +3655,48 @@ html, body {
     50% { transform: translateY(-10px); }
 }
 
+/* ============================================================
+   PROFILE ICONS (SVG Line Art)
+============================================================ */
+
+/* Icon chung trong Profile */
+.pro-svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.5;
+    fill: none;
+    stroke: currentColor;
+}
+
+/* Icon Avatar to hơn chút */
+.avatar-svg {
+    width: 32px;
+    height: 32px;
+    stroke-width: 1.5;
+}
+
+/* Icon trong các mục Cài đặt (Setting items) */
+.setting-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.8;
+}
+
+/* Icon Đăng xuất */
+.logout-svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    stroke-width: 2;
+}
+
+/* Chỉnh lại Flexbox cho nút Đăng xuất để căn giữa icon */
+.btn-logout-big {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .profile-section {
     background: #ffffff;
     border-radius: 16px;
@@ -2838,6 +3708,84 @@ html, body {
 /* Group các mục chọn */
 .setting-item {
     margin-bottom: 20px;
+}
+
+/* ============================================================
+   AUDIO BUTTON (Loa phát âm thanh)
+============================================================ */
+/* Icon Loa nhỏ trong nút */
+.audio-icon-sm {
+    width: 20px;
+    height: 20px;
+    stroke: #4b5563; /* Màu xám đậm */
+    transition: all 0.2s ease;
+}
+
+/* Định dạng nút tròn bao quanh (nếu soundBtn là nút tròn) */
+.btn-audio-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%; /* Tròn xoe */
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* Hiệu ứng khi di chuột hoặc bấm */
+.btn-audio-circle:hover {
+    background: #eef2ff;
+    border-color: #4f46e5;
+}
+
+.btn-audio-circle:hover .audio-icon-sm {
+    stroke: #4f46e5; /* Icon đổi màu tím */
+    transform: scale(1.1);
+}
+.btn-audio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.btn-audio:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+    background: #eef2ff;
+}
+
+/* Icon Loa */
+.audio-svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+/* Hiệu ứng sóng âm khi hover */
+.btn-audio:hover .wave-1 {
+    animation: soundWave 1s infinite;
+}
+.btn-audio:hover .wave-2 {
+    animation: soundWave 1s infinite 0.2s; /* Trễ 0.2s */
+}
+
+@keyframes soundWave {
+    0%, 100% { opacity: 1; stroke-width: 1.8; }
+    50% { opacity: 0.5; stroke-width: 1.5; }
 }
 
 /* Thiết kế lại Select Box */
@@ -3025,24 +3973,145 @@ html, body {
     }
 }
 
+/* ============================================================
+   CHAT SKELETON LOADING (Hiệu ứng khung xương)
+============================================================ */
+
+/* Khung bao ngoài giống chat-item */
+.chat-skeleton {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end; /* Hoặc flex-start tùy thiết kế */
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
+/* Avatar giả */
+.sk-avatar {
+    width: 28px; 
+    height: 28px; 
+    border-radius: 50%;
+    background: #f3f4f6;
+    flex-shrink: 0;
+}
+
+/* Bong bóng chat giả */
+.sk-bubble {
+    height: 36px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    border-bottom-left-radius: 2px;
+    width: 60%; /* Độ dài ngẫu nhiên */
+}
+
+/* Class tạo hiệu ứng ánh sáng chạy (Shimmer) */
+.skeleton-anim {
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-anim::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0.6) 50%, 
+        rgba(255,255,255,0) 100%
+    );
+    transform: translateX(-100%);
+    animation: sk-shimmer 1.5s infinite;
+}
+
+@keyframes sk-shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* Đảo ngược cho tin nhắn của "Me" (nếu muốn làm giả cả 2 bên) */
+.chat-skeleton.right {
+    flex-direction: row-reverse;
+}
+.chat-skeleton.right .sk-bubble {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 2px;
+}
+
+/* ============================================================
+   LEADERBOARD SKELETON (Khung xương Bảng xếp hạng)
+============================================================ */
+
+.lb-skeleton-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Các khối giả lập */
+.sk-rank-box {
+    width: 24px; height: 24px; 
+    border-radius: 6px; 
+    background: #f3f4f6;
+}
+
+.sk-user-info {
+    display: flex; 
+    align-items: center; 
+    gap: 12px;
+    width: 100%;
+}
+
+.sk-lb-avatar { /* Giả lập Avatar nếu có, hoặc khoảng trống */
+    width: 0px; /* Nếu style mới bỏ avatar thì để 0, nếu muốn hiện thì set 36px */
+    height: 36px;
+    border-radius: 50%;
+    background: #f3f4f6;
+}
+
+.sk-lb-name {
+    height: 14px;
+    width: 60%; /* Độ dài ngẫu nhiên */
+    background: #f3f4f6; 
+    border-radius: 4px;
+}
+
+.sk-lb-score {
+    width: 40px; 
+    height: 14px; 
+    background: #f3f4f6; 
+    border-radius: 4px;
+    margin-left: auto; /* Đẩy sang phải */
+}
+
+
+
 /* ===============================
    RESPONSIVE
 =================================*/
 @media (max-width: 840px) {
     .app {
         grid-template-columns: 1fr;
+        display: block;
+        height: auto;
     }
 }
 
 @media (max-width: 480px) { 
     /* Trên điện thoại, tên phải ngắn hơn nữa */
     .user-name-text {
-        max-width: 70px; /* Chỉ cho phép khoảng 8-10 ký tự */
+        max-width: 90px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .user-pill {
         font-size: 12px;
-        padding-left: 8px;
+        padding: 4px 8px;
     }
     
     .status-tag {
@@ -3050,13 +4119,27 @@ html, body {
         padding: 2px 6px;
     }
 
-    .login-wrapper {
-        padding: 20px 16px;
-    }
-    .login-card {
-        margin-top: 20px;
+    .flashcard-scene {
         width: 100%;
+        max-width: 340px;
+        aspect-ratio: 4/3; /* Tỉ lệ chữ nhật đẹp hơn trên mobile */
+        height: auto;
     }
+
+    .login-wrapper { padding: 15px; }
+    .login-card { width: 100%; margin-top: 10px; }
+
+    .lesson-header { gap: 10px; }
+    .lesson-icon-box { width: 45px; height: 45px; font-size: 22px; }
+    .lesson-title { font-size: 16px; }
+    .lesson-desc { font-size: 12px; }
+    
+    /* Input Game điền từ */
+    .fill-input {
+        font-size: 20px !important;
+        padding: 12px;
+    }
+
 }
 @media (max-width: 768px) {
     
@@ -3077,26 +4160,23 @@ html, body {
     }
 
     .sidebar {
-        /* Ghim chặt xuống đáy */
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 65px; /* Chiều cao thanh menu */
-        z-index: 9999;
+        height: 60px; /* Chiều cao cố định gọn gàng */
+        z-index: 10000;
         
-        background: #ffffff;
-        border-right: none;
-        border-top: 1px solid #e5e7eb; /* Kẻ chỉ bên trên */
-        border-radius: 0;
+        background: rgba(255, 255, 255, 0.98);
+        border-top: 1px solid rgba(0,0,0,0.1);
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+        
         padding: 0;
-        margin: 0;
+        padding-bottom: env(safe-area-inset-bottom); /* Fix cho iPhone tai thỏ */
         
-        /* Flexbox để căn chỉnh nút */
         display: flex;
-        align-items: center;
         justify-content: center;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.05); /* Đổ bóng ngược lên trên */
+        align-items: center;
     }
 
     
@@ -3139,7 +4219,14 @@ html, body {
 
     /* 5. TÙY CHỈNH THANH NAV (Các nút bấm) */
     .nav {
-        flex-direction: row; /* Quay lại ngang trên mobile */
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        justify-content: space-between; /* Chia đều khoảng cách */
+        gap: 0; /* Không dùng gap cứng, để flex tự chia */
     }
 
 
@@ -3155,6 +4242,68 @@ html, body {
         color: #9ca3af; /* Màu xám mặc định */
         font-size: 10px;
         font-weight: 500;
+    }
+
+    .nav-item {
+        flex: 1; /* Chia đều chiều rộng (20% mỗi nút nếu có 5 nút) */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        
+        padding: 0;
+        margin: 0;
+        background: transparent !important; /* Xóa nền xám mặc định */
+        border-radius: 0;
+        height: 100%;
+        color: #9ca3af;
+        min-width: 0; /* Cho phép co nhỏ nếu màn hình quá bé */
+    }
+
+    .nav-item i, 
+    .nav-icon {
+        font-size: 20px;
+        margin-bottom: 4px;
+        display: block;
+        line-height: 1;
+    }
+
+    .nav-item span {
+        font-size: 12px; /* Chữ nhỏ gọn */
+        font-weight: 500;
+        text-align: center;
+        display: block;
+        width: 100%;
+        line-height: 1.1;
+        
+        /* Xử lý chữ dài (như Động từ BQT) */
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 0 2px;
+    }
+
+    .nav-item.active {
+        color: #4f46e5; /* Màu tím xanh chủ đạo */
+        background: transparent !important;
+        font-weight: 800;
+    }
+
+    .nav-item.active i,
+    .nav-item.active .nav-icon {
+        transform: translateY(-2px); /* Nhảy nhẹ lên khi active */
+        transition: transform 0.2s;
+    }
+
+    /* 7. Xóa thanh gạch dọc bên trái của giao diện Desktop */
+    .nav-item.active::before {
+        display: none !important;
+    }
+
+    /* 8. Hiệu ứng khi bấm */
+    .nav-item:active {
+        opacity: 0.7;
+        transform: scale(0.95);
     }
     .nav-button .icon {
         font-size: 22px; /* Icon to lên chút */
@@ -3279,7 +4428,7 @@ html, body {
         margin-bottom: 12px;
     }
     .word-row > div:nth-child(6):before {
-        content: "📂 ";
+        content: " ";
     }
 
     /* 7. Actions (Nút bấm) - Dàn full chiều ngang */
@@ -3352,4 +4501,131 @@ html, body {
     .tools-left {
         width: 100%;
     }
+
+    /* 1. CONTAINER CHÍNH: Cho phép cuộn dọc toàn trang */
+    #ranking-section {
+        height: auto !important; /* Bỏ fix chiều cao để cuộn được */
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
+        padding-bottom: 80px !important; /* Chừa chỗ cho Menu đáy */
+        background: #f9fafb !important; /* Nền xám nhẹ cho tách biệt */
+    }
+
+    .ranking-layout {
+        flex-direction: column; /* Xếp dọc: Trên xuống dưới */
+        gap: 15px;
+        padding: 0;
+    }
+
+    /* 2. HEATMAP (Đẩy lên đầu & Cuộn ngang) */
+    .ranking-sidebar {
+        width: 100%; /* Full chiều rộng */
+        order: -1; /* Đẩy lên trên Bảng xếp hạng */
+        gap: 15px;
+    }
+
+    .widget-card.heatmap-card {
+        width: 100%;
+        box-sizing: border-box;
+        align-items: flex-start; /* Căn trái để cuộn từ đầu */
+        overflow-x: auto; /* Cho phép cuộn ngang */
+        padding: 15px;
+        border-radius: 0 0 16px 16px; /* Bo góc dưới cho đẹp */
+        border-top: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        
+        /* Ẩn thanh cuộn nhưng vẫn cuộn được (Thẩm mỹ) */
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    .widget-card.heatmap-card::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
+    .heatmap-wrapper {
+        min-width: 600px; /* Ép chiều rộng lớn để kích hoạt cuộn ngang */
+        padding-right: 20px;
+    }
+
+    /* 3. BẢNG XẾP HẠNG */
+    .leaderboard-panel {
+        border-radius: 16px;
+        border: none;
+        margin: 0 10px; /* Cách lề 2 bên một chút */
+        height: 500px; /* Giới hạn chiều cao danh sách */
+    }
+    
+    /* Header Bảng xếp hạng */
+    .lb-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #f8fafc;
+    }
+
+    /* Footer Hạng của tôi (Sticky bottom của bảng) */
+    .lb-my-rank {
+        position: sticky;
+        bottom: 0;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* 4. CHAT WIDGET */
+    .widget-card.chat-widget {
+        margin: 0 10px 30px 10px; /* Cách lề 2 bên, margin bottom 30px để không sát đáy */
+        height: 100px; /* Tăng chiều cao lên để đọc được nhiều tin hơn */
+        display: flex;
+        flex-direction: column;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    .chat-content {
+        background: #f8fafc; /* Nền xám nhạt bên trong khu vực tin nhắn */
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .chat-item {
+        font-size: 13px; /* Chữ vừa vặn */
+        max-width: 95%; /* Cho phép tin nhắn dài ra gần hết màn hình */
+    }
+    
+    .chat-bubble {
+        padding: 10px 14px; /* Tăng vùng đệm cho dễ nhìn */
+    }
+
+    /* Khu vực nhập liệu (Quan trọng) */
+    .chat-input-area {
+        padding-top: 5px;
+        gap: 10px;
+        background: white; /* Nền trắng để tách biệt */
+    }
+
+    .chat-input {
+        height: 44px; /* Cao chuẩn 44px (chuẩn Apple) để dễ bấm */
+        font-size: 14px; /* Cỡ chữ 14px để iPhone không tự zoom khi focus */
+        padding: 0 15px;
+        border-radius: 22px;
+    }
+
+    .chat-send-btn {
+        width: 44px; /* Nút gửi to, dễ bấm bằng ngón cái */
+        height: 44px;
+        font-size: 16px;
+    }
+    
+    /* Avatar trong chat nhỏ lại chút */
+    .chat-avatar {
+        width: 24px; height: 24px; font-size: 10px;
+    }
+
+    /* Tinh chỉnh Font chữ Mobile */
+    .lb-name-text { font-size: 13px; }
+    .lb-col-score { font-size: 13px; }
+    .fire-svg { width: 18px; height: 18px; } /* Lửa nhỏ lại xíu cho cân đối */
+    .medal-svg { width: 28px; height: 28px; }
 }

@@ -4174,7 +4174,7 @@ button:hover .inline-svg-icon {
         padding: 0;
         padding-bottom: env(safe-area-inset-bottom); /* Fix cho iPhone tai thỏ */
         
-       display: none;
+        display: flex;
         justify-content: center;
         align-items: center;
     }

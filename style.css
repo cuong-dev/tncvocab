@@ -4499,127 +4499,106 @@ button:hover .inline-svg-icon {
     .tools-left {
         width: 100%;
     }
-
-    /* 1. CONTAINER CHÍNH: Cho phép cuộn dọc toàn trang */
+/* 1. CONTAINER TỔNG: Cho phép cuộn trang tự nhiên */
     #ranking-section {
-        display: block !important;
-        height: auto !important;
-        overflow-y: auto !important;
-        padding-bottom: 120px !important; /* Chừa chỗ cho menu dưới */
-        -webkit-overflow-scrolling: touch;
-    }
+    /* SỬA LẠI DÒNG NÀY: */
+    display: flex; /* Bỏ !important, dùng flex để khớp với JS */
+    flex-direction: column; /* Xếp dọc nội dung */
+    
+    /* Các thuộc tính khác giữ nguyên */
+    height: auto !important;
+    min-height: 100vh;
+    background: #f9fafb !important;
+    padding: 10px 10px 120px 10px !important;
+    overflow-y: auto !important;
+}
 
+    /* 2. KHUNG LAYOUT: Xếp các khối dọc xuống */
     .ranking-layout {
         display: flex;
-        flex-direction: column; /* Xếp dọc các khối */
+        flex-direction: column;
         gap: 20px;
-        padding: 10px;
+        width: 100%;
+        margin: 0;
+        padding: 0;
     }
 
-    /* 2. HEATMAP (Đẩy lên đầu & Cuộn ngang) */
+    /* --- KHỐI 1: HEATMAP (HOẠT ĐỘNG) --- */
     .ranking-sidebar {
-        order: -1; /* Đẩy lên vị trí đầu tiên */
-        width: 100%;
+        order: 1; /* Hiển thị đầu tiên */
+        width: 100% !important;
+        flex: none; /* Không co giãn */
     }
 
     .widget-card.heatmap-card {
         width: 100%;
-        overflow-x: auto; /* Cho phép vuốt ngang */
-    }
-    .widget-card.heatmap-card::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, Opera */
+        padding: 15px;
+        border-radius: 16px;
+        background: white;
+        /* Setup cuộn ngang cho biểu đồ */
+        display: block; 
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
 
     .heatmap-wrapper {
-        min-width: 600px; /* Đảm bảo đủ rộng để hiện hết tuần */
+        min-width: 600px; /* Đảm bảo biểu đồ không bị bóp méo */
+        display: inline-block; /* Để wrapper hoạt động trong mode scroll */
     }
 
-    /* 3. BẢNG XẾP HẠNG - QUAN TRỌNG NHẤT */
+    /* --- KHỐI 2: BẢNG XẾP HẠNG (FIX CẨN THẬN) --- */
     .leaderboard-panel {
-        order: 0; /* Nằm giữa */
-        width: 100%;
-        height: 500px; /* Bắt buộc set chiều cao cố định để danh sách hiện ra */
-        display: flex;
-        flex-direction: column;
+        order: 2; /* Hiển thị thứ hai */
+        width: 100% !important;
+        
+        /* CHIỀU CAO CỐ ĐỊNH AN TOÀN */
+        height: 550px !important; 
+        
+        background: white;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        background: white;
-        overflow: hidden; /* Không cho tràn ra ngoài */
+        
+        /* Cấu trúc Flex dọc để chia Header/Body/Footer */
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden; /* Bo góc mượt mà */
     }
-    
-    /* Header Bảng xếp hạng */
+
+    /* Header: Giữ nguyên */
     .lb-header {
-        flex-shrink: 0; /* Không bị co lại */
+        flex: 0 0 auto; /* Không cho phép co lại */
+        height: 50px; /* Chiều cao cứng header */
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #f1f5f9;
+        background: #f8fafc;
     }
 
+    /* Body: Danh sách cuộn (Phần hay bị lỗi trắng) */
     .lb-body {
-        flex-grow: 1; /* Tự động giãn ra lấp đầy khoảng trống */
-        overflow-y: auto; /* Cho phép cuộn dọc danh sách */
-        height: 0; /* Trick để flex-grow hoạt động đúng trên mobile */
-        padding-bottom: 10px;
+        flex: 1 1 auto; /* Tự động chiếm hết khoảng trống còn lại */
+        height: auto;   /* Reset height */
+        overflow-y: auto; /* Cuộn dọc trong khu vực này */
+        min-height: 0;    /* QUAN TRỌNG: Fix lỗi Flexbox trên Safari/iOS */
+        display: block;   /* Đảm bảo render dạng khối */
     }
 
-    /* Footer Hạng của tôi (Sticky bottom của bảng) */
+    /* Footer: Hạng của tôi */
     .lb-my-rank {
-        flex-shrink: 0; /* Luôn hiện ở đáy, không bị co */
-        border-top: 1px solid #e2e8f0;
-        z-index: 10;
-        position: sticky;
-        bottom: 0;
+        flex: 0 0 auto; /* Không cho phép co lại */
+        height: 60px;   /* Chiều cao cứng footer */
+        border-top: 1px solid #f1f5f9;
+        background: white;
+        z-index: 5;
     }
-    
-    /* 4. CHAT WIDGET */
+
+    /* --- KHỐI 3: CHAT --- */
     .widget-card.chat-widget {
-        order: 1; 
-        width: 100%;
-        height: 450px;
+        order: 3; /* Hiển thị cuối cùng */
+        width: 100% !important;
+        height: 500px !important; /* Chiều cao cố định cho khung chat */
+        margin: 0 !important;
     }
 
-    .chat-content {
-        background: #f8fafc; /* Nền xám nhạt bên trong khu vực tin nhắn */
-        border-radius: 12px;
-        padding: 10px;
-        margin-bottom: 10px;
-        border: 1px solid #f1f5f9;
-    }
-
-    .chat-item {
-        font-size: 13px; /* Chữ vừa vặn */
-        max-width: 95%; /* Cho phép tin nhắn dài ra gần hết màn hình */
-    }
-    
-    .chat-bubble {
-        padding: 10px 14px; /* Tăng vùng đệm cho dễ nhìn */
-    }
-
-    /* Khu vực nhập liệu (Quan trọng) */
-    .chat-input-area {
-        padding-top: 5px;
-        gap: 10px;
-        background: white; /* Nền trắng để tách biệt */
-    }
-
-    .chat-input {
-        height: 44px; /* Cao chuẩn 44px (chuẩn Apple) để dễ bấm */
-        font-size: 14px; /* Cỡ chữ 14px để iPhone không tự zoom khi focus */
-        padding: 0 15px;
-        border-radius: 22px;
-    }
-
-    .chat-send-btn {
-        width: 44px; /* Nút gửi to, dễ bấm bằng ngón cái */
-        height: 44px;
-        font-size: 16px;
-    }
-    
-    /* Avatar trong chat nhỏ lại chút */
-    .chat-avatar {
-        width: 24px; height: 24px; font-size: 10px;
-    }
-
-    /* Tinh chỉnh Font chữ Mobile */
-    .lb-name-text { font-size: 13px; }
-    .lb-col-score { font-size: 13px; }
-    .fire-svg { width: 18px; height: 18px; } /* Lửa nhỏ lại xíu cho cân đối */
-    .medal-svg { width: 28px; height: 28px; }
 }

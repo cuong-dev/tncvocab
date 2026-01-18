@@ -1611,6 +1611,7 @@ function showSection(sectionId) {
     if (sectionId === 'vocab') {
         if (vocabSec) vocabSec.style.display = 'block';
         if (listSec)  listSec.style.display  = 'block';
+        
         // Active nút đầu tiên
         words = userWords;
         document.querySelector('.nav-item:nth-child(1)').classList.add('active');
@@ -1626,7 +1627,7 @@ function showSection(sectionId) {
         renderRankingBoard();
         renderHeatmap();
         loadChatMessages();
-        if(rankSec) rankSec.style.display = 'block';
+        rankSec.style.display = 'block';
         document.querySelector('.nav-item:nth-child(3)').classList.add('active');
         // Cập nhật streak của tôi vào bảng
         // Cập nhật Footer (Hạng của tôi)
@@ -3362,10 +3363,6 @@ const SEASONAL_CONFIG = [
 
 const PET_ASSETS = [
     { 
-        src: "https://media.tenor.com/eXlIRe28PVgAAAAi/bubu-dudu-bubu.gif", 
-        type: "walk", width: 60 
-    },
-    { 
         src: "https://media.tenor.com/rI_0O_9AJ5sAAAAj/nyan-cat-poptart-cat.gif", 
         type: "fly", width: 80 
     },
@@ -3400,7 +3397,7 @@ function initUnifiedEffects() {
     } else {
         // TRƯỜNG HỢP B: Ngày thường -> Chạy thú cưng
         console.log("🐈 Mode Ngày Thường: Thả thú cưng");
-        startDailyPets();
+        
     }
 }
 

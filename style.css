@@ -4512,64 +4512,56 @@ button:hover .inline-svg-icon {
         display: block !important; /* Bỏ flex center để nội dung tự chảy */
     }
 
-   .ranking-layout {
-        display: flex;
-        flex-direction: column; /* QUAN TRỌNG: Xếp chồng lên nhau */
-        width: 100%;
-        gap: 20px;
-        padding: 10px 0;
+    .ranking-layout {
+        flex-direction: column; /* Xếp dọc: Trên xuống dưới */
+        gap: 15px;
+        padding: 0;
     }
 
     /* 2. HEATMAP (Đẩy lên đầu & Cuộn ngang) */
     .ranking-sidebar {
-        width: 100% !important; /* Chiếm full màn hình */
-        min-width: 0; /* Fix lỗi flexbox bị tràn */
-        order: -1; /* Đẩy lên vị trí đầu tiên */
-        padding: 0 10px; /* Cách lề một chút */
-        box-sizing: border-box;
+        width: 100%; /* Full chiều rộng */
+        order: -1; /* Đẩy lên trên Bảng xếp hạng */
+        gap: 15px;
     }
 
-    /* Card chứa Heatmap - Cho phép cuộn ngang */
     .widget-card.heatmap-card {
         width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        overflow-x: auto; /* Kích hoạt cuộn ngang */
+        box-sizing: border-box;
+        align-items: flex-start; /* Căn trái để cuộn từ đầu */
+        overflow-x: auto; /* Cho phép cuộn ngang */
         padding: 15px;
-        border-radius: 16px;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-radius: 0 0 16px 16px; /* Bo góc dưới cho đẹp */
+        border-top: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
         
-        /* Ẩn thanh cuộn cho đẹp */
-        scrollbar-width: none; 
-        -ms-overflow-style: none;
+        /* Ẩn thanh cuộn nhưng vẫn cuộn được (Thẩm mỹ) */
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
     .widget-card.heatmap-card::-webkit-scrollbar {
-        display: none;
+        display: none; /* Chrome, Safari, Opera */
     }
 
-    /* Bắt buộc nội dung Heatmap rộng ra để cuộn */
     .heatmap-wrapper {
-        min-width: 650px; /* Độ rộng tối thiểu để hiển thị đủ 20 tuần */
+        min-width: 600px; /* Ép chiều rộng lớn để kích hoạt cuộn ngang */
         padding-right: 20px;
     }
 
-    /* 4. BẢNG XẾP HẠNG (Leaderboard) */
+    /* 3. BẢNG XẾP HẠNG */
     .leaderboard-panel {
-        width: calc(100% - 20px) !important; /* Trừ margin 2 bên */
-        margin: 0 auto;
-        height: 500px; /* Chiều cao cố định để cuộn danh sách */
         border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: none;
+        margin: 0 10px; /* Cách lề 2 bên một chút */
+        height: 500px; /* Giới hạn chiều cao danh sách */
     }
     
+    /* Header Bảng xếp hạng */
     .lb-header {
         position: sticky;
         top: 0;
         z-index: 10;
         background: #f8fafc;
-        border-radius: 16px 16px 0 0;
     }
 
     /* Footer Hạng của tôi (Sticky bottom của bảng) */
@@ -4583,7 +4575,7 @@ button:hover .inline-svg-icon {
     /* 4. CHAT WIDGET */
     .widget-card.chat-widget {
         margin: 0 10px 30px 10px; /* Cách lề 2 bên, margin bottom 30px để không sát đáy */
-        height: calc(100% - 20px); /* Tăng chiều cao lên để đọc được nhiều tin hơn */
+        height: 100px; /* Tăng chiều cao lên để đọc được nhiều tin hơn */
         display: flex;
         flex-direction: column;
         border: none;

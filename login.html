@@ -1,225 +1,149 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang=vi>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng nhập - TNC English</title>
-    <link rel="stylesheet" href="style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* CSS BỔ SUNG CHO ICON SVG */
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Icon trong phần giới thiệu tính năng */
-        .feature-icon-svg {
-            width: 24px;
-            height: 24px;
-            stroke-width: 1.5;
-            stroke: #4f46e5; /* Màu tím chủ đạo */
-            fill: none;
-            margin-right: 8px;
-        }
-
-        /* Icon lớn trong Modal Hết hạn */
-        .modal-main-icon {
-            width: 64px;
-            height: 64px;
-            stroke-width: 1;
-            stroke: #ef4444; /* Màu đỏ */
-            fill: none;
-            margin-bottom: 10px;
-            background: #fef2f2;
-            padding: 12px;
-            border-radius: 50%;
-        }
-
-        /* Icon nhỏ (Cảnh báo, Copy, Chat) */
-        .icon-sm {
-            width: 16px;
-            height: 16px;
-            stroke-width: 2;
-            fill: none;
-            display: inline-block;
-            vertical-align: -3px;
-        }
-
-        /* Hiệu ứng card tính năng */
-        .feature-item {
-            background: white; 
-            padding: 20px; 
-            border-radius: 16px; 
-            border: 1px solid #f3f4f6;
-            transition: transform 0.2s;
-        }
-        .feature-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            border-color: #e5e7eb;
-        }
-    </style>
+<meta charset=UTF-8 />
+<meta name=viewport content="width=device-width, initial-scale=1.0" />
+<title>Đăng nhập - TNC English</title>
+<link rel=stylesheet href=style.css />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel=stylesheet>
+<style>body{font-family:'Inter',sans-serif}.feature-icon-svg{width:24px;height:24px;stroke-width:1.5;stroke:#4f46e5;fill:none;margin-right:8px}.modal-main-icon{width:64px;height:64px;stroke-width:1;stroke:#ef4444;fill:none;margin-bottom:10px;background:#fef2f2;padding:12px;border-radius:50%}.icon-sm{width:16px;height:16px;stroke-width:2;fill:none;display:inline-block;vertical-align:-3px}.feature-item{background:white;padding:20px;border-radius:16px;border:1px solid #f3f4f6;transition:transform .2s}.feature-item:hover{transform:translateY(-4px);box-shadow:0 10px 15px -3px rgba(0,0,0,0.05);border-color:#e5e7eb}</style>
 </head>
-<body class="login-body">
-<div class="login-wrapper">
-    <div class="login-card">
-        <div class="login-logo">
-            <div><img src="assets/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'"></div>
-            <div>
-                <div class="logo-text-main">TNC ENGLISH</div>
-                <div class="logo-text-sub" id="page-subtitle">Đăng nhập để tiếp tục</div>
-            </div>
-        </div>
-
-        <form id="login-form" class="login-form">
-            <label for="login-email">Email</label>
-            <input type="email" id="login-email" placeholder="name@example.com" autocomplete="username" required />
-
-            <label for="login-password">Mật khẩu</label>
-            <input type="password" id="login-password" autocomplete="current-password" required />
-
-            <button type="submit" class="btn-primary" style="width:100%; margin-top:12px; padding: 10px;">
-                Đăng nhập
-            </button>
-
-            <div class="auth-switch">
-                Chưa có tài khoản? <a href="#" id="go-to-register">Đăng ký ngay</a>
-            </div>
-        </form>
-
-        <form id="register-form" class="login-form" style="display:none;">
-            <label for="reg-name">Tên hiển thị</label>
-            <input type="text" id="reg-name" placeholder="Vd: Minh Tuấn" autocomplete="name" required />
-
-            <label for="reg-email">Email</label>
-            <input type="email" id="reg-email" placeholder="name@example.com" autocomplete="email" required />
-
-            <label for="reg-password">Mật khẩu</label>
-            <input type="password" id="reg-password" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password" required />
-
-            <label for="reg-confirm">Nhập lại mật khẩu</label>
-            <input type="password" id="reg-confirm" autocomplete="new-password" required />
-
-            <button type="submit" class="btn-primary" style="width:100%; margin-top:12px; padding: 10px;">
-                Đăng ký tài khoản
-            </button>
-
-            <div class="auth-switch">
-                Đã có tài khoản? <a href="#" id="go-to-login">Đăng nhập</a>
-            </div>
-        </form>
-
-        <div id="login-message" class="login-message"></div>
-    </div>
-
-    <div class="seo-content" style="max-width: 1000px; margin: 50px auto; color: #4b5563; font-size: 14px; line-height: 1.2; padding: 0 20px;">
-        <h1 style="color:#111827; text-align:center; font-size: 24px; margin-bottom: 30px;">Học từ vựng tiếng Anh hiệu quả với TNC English</h1>
-        
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            
-            <div class="feature-item">
-                <h3 style="margin-top:0; color:#111827; display:flex; align-items:center;">
-                    <svg class="feature-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    Phương pháp Spaced Repetition
-                </h3>
-                <p>Thuật toán lặp lại ngắt quãng giúp bạn ôn tập từ vựng đúng "điểm rơi" của trí nhớ, giúp nhớ lâu hơn gấp 3 lần.</p>
-            </div>
-
-            <div class="feature-item">
-                <h3 style="margin-top:0; color:#111827; display:flex; align-items:center;">
-                    <svg class="feature-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                    </svg>
-                    Tích hợp Gemini AI
-                </h3>
-                <p>AI tự động gợi ý nghĩa, phiên âm IPA, loại từ và đặt câu ví dụ chuẩn ngữ pháp. Không cần tra từ điển thủ công.</p>
-            </div>
-
-            <div class="feature-item">
-                <h3 style="margin-top:0; color:#111827; display:flex; align-items:center;">
-                    <svg class="feature-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
-                    </svg>
-                    Gamification (Học mà chơi)
-                </h3>
-                <p>Ôn tập qua các trò chơi thú vị: Lật thẻ Flashcard, Điền từ, Sắp xếp ký tự. Theo dõi chuỗi ngày học (Streak) để duy trì thói quen.</p>
-            </div>
-        </div>
-        
-        <p style="text-align:center; margin-top:30px; font-size:12px; color:#9ca3af;">
-            © 2024 TNC English - Nền tảng học từ vựng cá nhân hóa.
-        </p>
-    </div>
+<body class=login-body>
+<div class=login-wrapper>
+<div class=login-card>
+<div class=login-logo>
+<div><img src=assets/logo.png alt=Logo class=logo-img onerror="this.style.display='none'"></div>
+<div>
+<div class=logo-text-main>TNC ENGLISH</div>
+<div class=logo-text-sub id=page-subtitle>Đăng nhập để tiếp tục</div>
 </div>
-
-<div id="expired-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal-card" style="width: 380px; border-top: 4px solid #ef4444; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
-        <div style="text-align:center;">
-            <div style="display:flex; justify-content:center;">
-                <svg class="modal-main-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                </svg>
-            </div>
-            
-            <div class="modal-title" style="color:#b91c1c; font-size:18px; margin-top:5px;">Kích hoạt tài khoản</div>
-            <p id="expired-message" class="modal-sub" style="margin-bottom:10px;">
-                Tài khoản của bạn chưa được kích hoạt hoặc đã hết hạn.
-            </p>
-        </div>
-
-        <div class="payment-box" style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:15px;">
-            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:4px;">Phí gia hạn / Kích hoạt</div>
-            <div style="text-align:center;">
-                <span class="price-tag" style="background:white; border:1px solid #fbbf24; color:#d97706; padding:4px 12px; border-radius:20px; font-weight:bold; font-size:16px;">
-                    35.000đ <small style="font-size:13px; font-weight:500;">/ tháng</small>
-                </span>
-            </div>
-            
-            <div class="bank-info" style="margin-top:15px; border-top:1px dashed #fdba74; padding-top:10px;">
-                <div class="bank-row" style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span class="bank-label" style="color:#64748b;">Ngân hàng:</span>
-                    <span class="bank-value" style="font-weight:600;">TPBANK</span>
-                </div>
-                <div class="bank-row" style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span class="bank-label" style="color:#64748b;">Chủ TK:</span>
-                    <span class="bank-value" style="font-weight:600;">TRAN NGOC CUONG</span>
-                </div>
-                <div class="bank-row" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="bank-label" style="color:#64748b;">Số TK:</span>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <span class="bank-value" style="color:#0f172a; font-size:15px; font-weight:700;">04312089999</span>
-                        <button onclick="navigator.clipboard.writeText('04312089999'); alert('Đã sao chép STK')" style="border:none; background:#f1f5f9; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:10px;">
-                            COPY
-                        </button>
-                    </div>
-                </div>
-            </div> 
-
-            <div style="margin-top:12px; font-size:11px; text-align:center; color:#64748b;">Nội dung chuyển khoản (Bắt buộc):</div>
-            <div class="transfer-syntax" style="background:white; border:1px solid #e5e7eb; padding:8px; text-align:center; font-family:monospace; color:#ef4444; font-weight:bold; border-radius:6px; margin-top:4px;">
-                VOCAB [EMAIL_CUA_BAN]
-            </div>
-            
-            <div class="legal-note" style="font-size:11px; color:#94a3b8; margin-top:12px; line-height:1.4;">
-                <svg class="icon-sm" style="stroke:#f59e0b;" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <b>Lưu ý:</b> Đây là trang web học tập cá nhân. Phí chỉ dùng cho Server & API AI.
-            </div>
-        </div>
-
-        <div class="contact-admin" style="text-align:center; font-size:13px; margin-top:15px;">
-            Đã chuyển khoản? Chụp ảnh gửi Zalo: <b style="color:#0088FF">0946415092</b>
-        </div>
-
-        <div style="margin-top:16px; display:flex; gap:10px;">
-            <button class="btn-ghost" onclick="window.location.reload()" style="flex:1; border:1px solid #e5e7eb; background:white; padding:10px; border-radius:8px; cursor:pointer;">Quay lại</button>
-            <button class="btn-primary" onclick="window.location.href='https://zalo.me/g/vggdoi022'" style="flex:1; background:#0088FF; color:white; border:none; border-radius:8px; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; cursor:pointer;">
-                <svg class="icon-sm" style="stroke:white;" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                Chat Admin
-            </button>
-        </div> 
-    </div>
 </div>
-<script src="login.js"></script>
+<form id=login-form class=login-form>
+<label for=login-email>Email</label>
+<input type=email id=login-email placeholder=name@example.com autocomplete=username required />
+<label for=login-password>Mật khẩu</label>
+<input type=password id=login-password autocomplete=current-password required />
+<button type=submit class=btn-primary style=width:100%;margin-top:12px;padding:10px>
+Đăng nhập
+</button>
+<div class=auth-switch>
+Chưa có tài khoản? <a href=# id=go-to-register>Đăng ký ngay</a>
+</div>
+</form>
+<form id=register-form class=login-form style=display:none>
+<label for=reg-name>Tên hiển thị</label>
+<input type=text id=reg-name placeholder="Vd: Minh Tuấn" autocomplete=name required />
+<label for=reg-email>Email</label>
+<input type=email id=reg-email placeholder=name@example.com autocomplete=email required />
+<label for=reg-password>Mật khẩu</label>
+<input type=password id=reg-password placeholder="Tối thiểu 6 ký tự" autocomplete=new-password required />
+<label for=reg-confirm>Nhập lại mật khẩu</label>
+<input type=password id=reg-confirm autocomplete=new-password required />
+<button type=submit class=btn-primary style=width:100%;margin-top:12px;padding:10px>
+Đăng ký tài khoản
+</button>
+<div class=auth-switch>
+Đã có tài khoản? <a href=# id=go-to-login>Đăng nhập</a>
+</div>
+</form>
+<div id=login-message class=login-message></div>
+</div>
+<div class=seo-content style="max-width:1000px;margin:50px auto;color:#4b5563;font-size:14px;line-height:1.2;padding:0 20px">
+<h1 style=color:#111827;text-align:center;font-size:24px;margin-bottom:30px>Học từ vựng tiếng Anh hiệu quả với TNC English</h1>
+<div style=display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px>
+<div class=feature-item>
+<h3 style=margin-top:0;color:#111827;display:flex;align-items:center>
+<svg class=feature-icon-svg viewBox="0 0 24 24" xmlns=http://www.w3.org/2000/svg>
+<path stroke-linecap=round stroke-linejoin=round d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+</svg>
+Phương pháp Spaced Repetition
+</h3>
+<p>Thuật toán lặp lại ngắt quãng giúp bạn ôn tập từ vựng đúng "điểm rơi" của trí nhớ, giúp nhớ lâu hơn gấp 3 lần.</p>
+</div>
+<div class=feature-item>
+<h3 style=margin-top:0;color:#111827;display:flex;align-items:center>
+<svg class=feature-icon-svg viewBox="0 0 24 24" xmlns=http://www.w3.org/2000/svg>
+<path stroke-linecap=round stroke-linejoin=round d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+</svg>
+Tích hợp Gemini AI
+</h3>
+<p>AI tự động gợi ý nghĩa, phiên âm IPA, loại từ và đặt câu ví dụ chuẩn ngữ pháp. Không cần tra từ điển thủ công.</p>
+</div>
+<div class=feature-item>
+<h3 style=margin-top:0;color:#111827;display:flex;align-items:center>
+<svg class=feature-icon-svg viewBox="0 0 24 24" xmlns=http://www.w3.org/2000/svg>
+<path stroke-linecap=round stroke-linejoin=round d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+</svg>
+Gamification (Học mà chơi)
+</h3>
+<p>Ôn tập qua các trò chơi thú vị: Lật thẻ Flashcard, Điền từ, Sắp xếp ký tự. Theo dõi chuỗi ngày học (Streak) để duy trì thói quen.</p>
+</div>
+</div>
+<p style=text-align:center;margin-top:30px;font-size:12px;color:#9ca3af>
+© 2024 TNC English - Nền tảng học từ vựng cá nhân hóa.
+</p>
+</div>
+</div>
+<div id=expired-modal class=modal-backdrop style=display:none>
+<div class=modal-card style="width:380px;border-top:4px solid #ef4444;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1)">
+<div style=text-align:center>
+<div style=display:flex;justify-content:center>
+<svg class=modal-main-icon viewBox="0 0 24 24" xmlns=http://www.w3.org/2000/svg>
+<path stroke-linecap=round stroke-linejoin=round d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+</svg>
+</div>
+<div class=modal-title style=color:#b91c1c;font-size:18px;margin-top:5px>Kích hoạt tài khoản</div>
+<p id=expired-message class=modal-sub style=margin-bottom:10px>
+Tài khoản của bạn chưa được kích hoạt hoặc đã hết hạn.
+</p>
+</div>
+<div class=payment-box style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:15px">
+<div style=text-align:center;font-size:12px;color:#64748b;margin-bottom:4px>Phí gia hạn / Kích hoạt</div>
+<div style=text-align:center>
+<span class=price-tag style="background:white;border:1px solid #fbbf24;color:#d97706;padding:4px 12px;border-radius:20px;font-weight:bold;font-size:16px">
+35.000đ <small style=font-size:13px;font-weight:500>/ tháng</small>
+</span>
+</div>
+<div class=bank-info style="margin-top:15px;border-top:1px dashed #fdba74;padding-top:10px">
+<div class=bank-row style=display:flex;justify-content:space-between;margin-bottom:5px>
+<span class=bank-label style=color:#64748b>Ngân hàng:</span>
+<span class=bank-value style=font-weight:600>TPBANK</span>
+</div>
+<div class=bank-row style=display:flex;justify-content:space-between;margin-bottom:5px>
+<span class=bank-label style=color:#64748b>Chủ TK:</span>
+<span class=bank-value style=font-weight:600>TRAN NGOC CUONG</span>
+</div>
+<div class=bank-row style=display:flex;justify-content:space-between;align-items:center>
+<span class=bank-label style=color:#64748b>Số TK:</span>
+<div style=display:flex;align-items:center;gap:5px>
+<span class=bank-value style=color:#0f172a;font-size:15px;font-weight:700>04312089999</span>
+<button onclick="navigator.clipboard.writeText('04312089999');alert('Đã sao chép STK')" style="border:0;background:#f1f5f9;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:10px">
+COPY
+</button>
+</div>
+</div>
+</div>
+<div style=margin-top:12px;font-size:11px;text-align:center;color:#64748b>Nội dung chuyển khoản (Bắt buộc):</div>
+<div class=transfer-syntax style="background:white;border:1px solid #e5e7eb;padding:8px;text-align:center;font-family:monospace;color:#ef4444;font-weight:bold;border-radius:6px;margin-top:4px">
+VOCAB [EMAIL_CUA_BAN]
+</div>
+<div class=legal-note style=font-size:11px;color:#94a3b8;margin-top:12px;line-height:1.4>
+<svg class=icon-sm style=stroke:#f59e0b viewBox="0 0 24 24" stroke=currentColor><path stroke-linecap=round stroke-linejoin=round d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+<b>Lưu ý:</b> Đây là trang web học tập cá nhân. Phí chỉ dùng cho Server & API AI.
+</div>
+</div>
+<div class=contact-admin style=text-align:center;font-size:13px;margin-top:15px>
+Đã chuyển khoản? Chụp ảnh gửi Zalo: <b style=color:#0088FF>0946415092</b>
+</div>
+<div style=margin-top:16px;display:flex;gap:10px>
+<button class=btn-ghost onclick=window.location.reload() style="flex:1;border:1px solid #e5e7eb;background:white;padding:10px;border-radius:8px;cursor:pointer">Quay lại</button>
+<button class=btn-primary onclick="window.location.href='https://zalo.me/g/vggdoi022'" style=flex:1;background:#08f;color:white;border:0;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;cursor:pointer>
+<svg class=icon-sm style=stroke:white viewBox="0 0 24 24" stroke=currentColor><path stroke-linecap=round stroke-linejoin=round d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+Chat Admin
+</button>
+</div>
+</div>
+</div>
+<script src=login.js></script>
 </body>
 </html>

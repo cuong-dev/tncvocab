@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const SHEET_WEB_APP_URL      = "https://script.google.com/macros/s/AKfycbwF4oukVU_5jSvTDq89Fv5wIVlgrdMiihyJeKdiR59P_DwSXVx78QphXcqZNiPYyCF-/exec"; // Web App VocabScript (/exec)
-const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzsDGNhF8ZMzvIBq76E297c7mctGk_ubfbx42kIcB8rT9cP1L2aBFgmTJMAB0_TJ3N6/exec"; // Web App LoginScript (/exec)
+const LOGIN_API_URL          = "https://script.google.com/macros/s/AKfycbzUYfySfAABZXIY6Tj9n5Jd0MH4_NBvYbF0jV2NKYZwkbwXA9E9EPvfSd2CswsBv5HS/exec"; // Web App LoginScript (/exec)
 const USER_STORAGE_KEY       = "vocab_user_profile";
 const GEMINI_KEY_STORAGE_KEY = "vocab_gemini_api_key";
 const STATUS_CONFIG = [
